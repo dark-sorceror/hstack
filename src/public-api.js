@@ -1,5 +1,6 @@
 "use strict";
-const RESERVED = new Set(["toc", "outline", "format", "tidy", "help"]);
+const { reservedNames } = require("./commands/catalog.js");
+const RESERVED = new Set(reservedNames);
 function validateTemplates(value) {
   if (!Array.isArray(value) || value.length > 50)
     throw Error("Use an array of at most 50 templates.");
@@ -79,4 +80,23 @@ function installTemplates(plugin, templates) {
     plugin.templateDisposers.push(dispose);
   }
 }
-module.exports = { validateTemplates, renderTemplate, createPublicAPI, installTemplates };
+function restoreTemplates(plugin, notify) {
+  // Validate/register saved commands before suggestions can be used. Invalid
+  // configuration must not disable typing or silently overwrite saved data.
+  try {
+    installTemplates(plugin, plugin.options.templates || []);
+  } catch (error) {
+    notify("Custom templates could not load: " + error.message);
+  }
+  plugin.register(() => {
+    for (const dispose of plugin.templateDisposers || []) dispose();
+    plugin.templateDisposers = [];
+  });
+}
+module.exports = {
+  validateTemplates,
+  renderTemplate,
+  createPublicAPI,
+  installTemplates,
+  restoreTemplates,
+};

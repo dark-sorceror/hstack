@@ -77,7 +77,7 @@ module.exports = class TypingSettings extends PluginSettingTab {
         .addToggle((toggle) =>
           toggle.setValue(this.plugin.options[key]).onChange(async (value) => {
             this.plugin.options[key] = value;
-            await this.plugin.saveData(this.plugin.options);
+            await this.plugin.saveSettings();
           })
         );
     }
@@ -107,7 +107,7 @@ module.exports = class TypingSettings extends PluginSettingTab {
                 throw Error("Command name is already registered.");
               installTemplates(this.plugin, templates);
               this.plugin.options.templates = templates;
-              await this.plugin.saveData(this.plugin.options);
+              await this.plugin.saveSettings();
               validation.setText("");
             } catch (error) {
               validation.setText("Not saved: " + error.message);
@@ -122,7 +122,7 @@ module.exports = class TypingSettings extends PluginSettingTab {
       .addText((input) =>
         input.setValue(this.plugin.options.sqlNodePath || "").onChange(async (value) => {
           this.plugin.options.sqlNodePath = value.trim();
-          await this.plugin.saveData(this.plugin.options);
+          await this.plugin.saveSettings();
         })
       );
     new Setting(this.containerEl)
@@ -139,7 +139,7 @@ module.exports = class TypingSettings extends PluginSettingTab {
             ),
           ];
           this.plugin.autocorrect?.setPersonalWords(this.plugin.options.autocorrectWords);
-          await this.plugin.saveData(this.plugin.options);
+          await this.plugin.saveSettings();
         })
       );
   }

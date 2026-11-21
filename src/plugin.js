@@ -6,33 +6,13 @@ const { EditorView, Decoration, ViewPlugin } = require("@codemirror/view");
 const SlashHelpModal = require("./ui/slash-help.js");
 const TypingSettings = require("./ui/settings.js");
 
-const DEFAULTS = {
-  mixedLists: true,
-  literalSpaces: true,
-  typography: true,
-  listShortcuts: true,
-  listStyles: true,
-  underline: true,
-  emoji: true,
-  formatPairs: true,
-  autocorrect: true,
-  autocorrectWords: [],
-  calloutPaste: true,
-  slash: true,
-  slashUsage: {},
-  templates: [],
-  sqlNodePath: "",
-  agentBridge: true,
-};
+const { restoreTemplates } = require("./public-api.js");
+const { normalizeSettings, createSettingsSaver } = require("./settings.js");
 
 module.exports = class HstackCore extends Plugin {
   async onload() {
-    this.options = { ...DEFAULTS, ...(await this.loadData()) };
-    if (!this.options.emojiUsage || typeof this.options.emojiUsage !== "object")
-      this.options.emojiUsage = {};
-    if (!Array.isArray(this.options.autocorrectWords)) this.options.autocorrectWords = [];
-    if (!this.options.slashUsage || typeof this.options.slashUsage !== "object")
-      this.options.slashUsage = {};
+    this.options = normalizeSettings(await this.loadData());
+    this.saveSettings = createSettingsSaver(this);
     this.replacements = new WeakMap();
     this.typedWords = new WeakMap();
     this.logic = require("./features/logic.js");
@@ -41,6 +21,7 @@ module.exports = class HstackCore extends Plugin {
     this.spaces = require("./features/spaces.js");
     this.calloutPaste = require("./features/callout-paste.js");
     this.slash = require("./features/slash.js").createRegistry();
+    restoreTemplates(this, (message) => new Notice(message));
     this.outline = require("./features/outline.js");
     this.format = require("./features/format.js");
     this.agent = require("./agent/agent-bridge.js").createAgentBridge(this, {
@@ -256,9 +237,9 @@ module.exports = class HstackCore extends Plugin {
 
   recordSlash(id) {
     this.options.slashUsage[id] = (Number(this.options.slashUsage[id]) || 0) + 1;
-    this._emojiSave = (this._emojiSave || Promise.resolve())
-      .then(() => this.saveData(this.options))
-      .catch((error) => console.error("hstack: could not save command usage", error));
+    this.saveSettings().catch((error) =>
+      console.error("hstack: could not save command usage", error)
+    );
   }
 
   onPasteTransaction(transaction) {
@@ -315,9 +296,9 @@ module.exports = class HstackCore extends Plugin {
 
   recordEmoji(emoji) {
     this.options.emojiUsage[emoji] = (Number(this.options.emojiUsage[emoji]) || 0) + 1;
-    this._emojiSave = (this._emojiSave || Promise.resolve())
-      .then(() => this.saveData(this.options))
-      .catch((error) => console.error("hstack: could not save emoji usage", error));
+    this.saveSettings().catch((error) =>
+      console.error("hstack: could not save emoji usage", error)
+    );
   }
 
   inCode(view, position) {

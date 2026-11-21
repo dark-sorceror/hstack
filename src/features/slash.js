@@ -1,29 +1,7 @@
 "use strict";
 
 // Native EditorSuggest is injected by main.js so this module also works in Node.
-const commands = Object.freeze([
-  Object.freeze({
-    id: "toc",
-    name: "toc",
-    aliases: ["outline"],
-    icon: "📑",
-    description: "Insert a table of contents for this note",
-  }),
-  Object.freeze({
-    id: "format",
-    name: "format",
-    aliases: ["tidy"],
-    icon: "🧹",
-    description: "Format this note’s Markdown spacing",
-  }),
-  Object.freeze({
-    id: "help",
-    name: "help",
-    aliases: [],
-    icon: "💡",
-    description: "See available commands and keyboard shortcuts",
-  }),
-]);
+const { commands } = require("../commands/catalog.js");
 
 function usageCount(usage, id) {
   const value = Number(usage?.[id]);

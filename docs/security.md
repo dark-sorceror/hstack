@@ -1,36 +1,45 @@
-# Security and limitations
+---
+title: "Permissions and limits"
+description: "Understand local access before enabling tools."
+---
 
-hstack runs locally. It has no network listener, telemetry, LLM integration,
-account, paid tier, self-updater or runtime dependency installer. Build tooling
-uses npm only when a developer explicitly installs dependencies.
+hstack has no runtime network listener, telemetry, account, model integration,
+self-updater or dependency installer. Plugin settings and usage counts stay in
+Obsidian's data.json; notes are not rewritten on load.
 
-The agent bridge is enabled by default as an in-process API and can be disabled
-in settings. It is available to trusted code with Obsidian/plugin/CLI access.
-That caller already has powerful app access; the bridge is not an authentication
-system. Normal notes do not execute code. Do not automate arbitrary JavaScript
-from note text. Trusted slash callbacks have the privileges of their host plugin.
+## Agent bridge
 
-The API limits writing to existing visible vault-relative Markdown notes. It
-rejects escaping symlinks, hidden paths and AGENTS.md/CLAUDE.md instruction-file
-patches. This prevents routine scope mistakes, not all malicious filesystem
-races. For adversarial isolation, use OS permissions and a separate vault.
+The bridge is enabled by default and can be disabled in settings. It is an
+in-process API for trusted code with plugin/CLI access, not an authentication
+system or OS sandbox. The unrestricted native CLI can do more than this API.
 
-The bridge reads live source-mode buffers; saved-cache backlinks can lag.
-Metadata extraction is intentionally limited to common Markdown. SQL/query
-snapshots are sequential, so use returned note revisions for any subsequent edit.
-Invalid YAML fails query snapshots rather than inventing properties. Response
-limits can truncate excerpts/cells; check flags before reasoning from absence.
+Reads cover visible vault Markdown and live source-mode buffers. Writes target
+explicit existing notes and require their revision. Hidden/escaping paths and
+AGENTS.md/CLAUDE.md patches are rejected. The bridge does not create, rename or
+delete notes. Filesystem checks reduce scope mistakes, not every malicious race.
 
-SQL starts a local Node executable. The plugin discovers Node in PATH/common
-locations or uses an explicitly configured path. This reads executable metadata
-outside the vault; it does not index unrelated documents. SQL is read-only over
-an ephemeral snapshot, with a kill budget and bounded results. The CLI client
-also uses temporary lock files outside the vault. It queues cooperating clients;
-unrelated direct native CLI eval calls do not participate. A killed client may
-leave a lock that is recovered after its process is gone; busy requests may need
-retrying. Do not force-retry an unacknowledged write without reading first.
+Text templates never evaluate code. Registered JavaScript callbacks run with
+their host plugin's privileges. Never turn note text into executable instructions.
 
-Report problems privately through the repository's private security advisory
-channel once a GitHub repository exists. Until then, this is a local project:
-contact the maintainer directly. Do not publish personal notes in bug reports.
-Include Obsidian/installer/platform versions and a minimal synthetic reproducer.
+## Outside-vault activity
+
+SQL discovers or uses a configured external Node executable and sends a bounded
+snapshot to a local child process. It reads executable metadata outside the
+vault, not unrelated documents. The database exists only in memory; execution,
+heap and output are bounded. See [SQL limits](/reference/sql).
+
+The separate CLI client launches Obsidian's official CLI and uses temporary
+locks outside the vault. Its locks serialize cooperating clients; unrelated
+direct CLI calls do not participate.
+
+## Consistency limits
+
+Metadata covers common Markdown, snapshots capture notes sequentially, and
+saved-cache backlinks can lag. Check truncation flags before reasoning from
+missing data. After an unacknowledged write, read before retrying.
+
+## Report a problem
+
+Use a private maintainer contact or the repository's private security reporting
+route once configured. Do not put personal notes or credentials in public
+issues. Include app/installer/plugin/OS versions and a minimal synthetic example.

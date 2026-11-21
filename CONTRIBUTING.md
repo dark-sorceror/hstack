@@ -1,35 +1,34 @@
 # Contributing
 
-Use a separate test vault and Node 22.13+. Start with `npm ci` and `npm run check`.
-Read docs/architecture.md and docs/security.md before editor or bridge changes.
+Start with [development setup](docs/developers/setup.md). Use Node 22.16+ on
+Node 22.x or Node 24+, and a separate test vault.
 
-Keep algorithms small, deterministic and independent of host UI where possible.
-Add focused preservation/regression checks for changed behavior, rather than
-mirroring implementation. Protect code, custom list semantics and uncertainty
-in notes. Test pasted rich content, nested lists and one-step Undo when relevant.
-Use synthetic examples; never commit real vault notes or settings.
+```sh
+npm ci --ignore-scripts
+npm run check
+```
 
-Edit src/, not generated main.js or an installed copy. New public interfaces use
-strict TypeScript; migrate JS modules incrementally when you can verify parity.
-Keep Obsidian/CodeMirror external in the build. Avoid new runtime dependencies,
-network services or broad file writes unless the feature explicitly needs them.
+## Make a focused change
 
-Before release, review data licenses and runtime disclosures. Explain the
-concrete behavior change and meaningful validation in PRs. Follow the existing
-syntax/style in a module. Run npm run package to verify the actual release shape.
+- Edit src/, not generated main.js or an installed plugin copy.
+- Preserve Markdown meaning, typing precedence and one-step Undo.
+- Add focused regression checks for behavior changes. Use synthetic notes.
+- Keep Obsidian/CodeMirror external. Avoid new runtime services or dependencies
+  unless the feature needs them.
+- Prefer strict TypeScript for new interfaces. Migrate JavaScript separately
+  with parity checks; do not hide gaps behind broad `any` or `ts-nocheck`.
 
-## Branches and commits
+Build scripts can remain .mjs, tests .cjs, and the autocorrect engine Rust.
+For Rust changes, rebuild with the pinned compiler and verify the shipped Wasm.
 
-Use feat/slug, fix/slug, refactor/slug, style/slug, chore/slug, perf/slug,
-docs/slug, test/slug, build/slug or ci/slug. main is the primary branch.
-Every change starts from a scoped issue and is reviewed in a corresponding PR.
+## Prepare a review
 
-Commit subjects must be type(scope): concise summary with no description/body.
-The root commit is the sole exception: Initial Commit, containing only the title
-README.md, .gitattributes and .gitignore. Use the issue/PR templates, avoid unrelated
-scope, and distinguish completed checks from checks still to run.
+Use a scoped issue and topic branch. Commit subjects follow
+`type(scope): summary` with no body. Explain the observable change and checks
+actually performed; keep unrelated formatting and migration work separate.
 
-Prefer TypeScript for new runtime modules. Port remaining JavaScript through a
-separate behavior-preserving change with strict checking and parity coverage;
-do not use mass any or ts-nocheck annotations to simulate a completed migration.
-Build tooling may remain Node .mjs and tests may remain .cjs.
+Run `npm run package` before release work. Never include vault notes, data.json,
+credentials or local research in commits or bug reports.
+
+[Architecture](docs/developers/architecture.md) · [Security](docs/security.md) ·
+[Documentation](docs/developers/documentation.md) · [Release guide](docs/developers/releases.md)

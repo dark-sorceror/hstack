@@ -1,0 +1,61 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "hstack",
+  "colors": {
+    "primary": "#3F3D3A",
+    "light": "#D6D0C8",
+    "dark": "#252422"
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Use hstack",
+        "groups": [
+          {
+            "group": "Get started",
+            "pages": ["index", "start/installation", "start/quickstart", "start/troubleshooting"]
+          },
+          {
+            "group": "Write",
+            "pages": ["guides/writing", "guides/commands", "guides/templates"]
+          },
+          {
+            "group": "Permissions",
+            "pages": ["security"]
+          }
+        ]
+      },
+      {
+        "tab": "Build with hstack",
+        "groups": [
+          {
+            "group": "Connect a tool",
+            "pages": ["guides/agent-setup"]
+          },
+          {
+            "group": "API reference",
+            "pages": [
+              "reference/bridge",
+              "reference/patches",
+              "reference/sql",
+              "reference/extensions"
+            ]
+          },
+          {
+            "group": "Contribute",
+            "pages": [
+              "developers/setup",
+              "developers/architecture",
+              "developers/releases",
+              "developers/documentation",
+              "developers/data"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "logo": "/images/hstack-logo-centered.png",
+  "favicon": "/images/hstack-logo-centered.png"
+}

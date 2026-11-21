@@ -1,0 +1,129 @@
+/* Keep native list layout/caret hitboxes; only draw the hyphen marker as a bar. */
+.markdown-source-view.mod-cm6 .cm-line[data-notes-list-style="dash"]:not(.HyperMD-task-line) .cm-formatting-list-ul .list-bullet::after,
+.markdown-rendered li[data-notes-list-style="dash"]:not(.task-list-item) > .list-bullet::after {
+  width: 0.5em;
+  height: 1.5px;
+  border: none;
+  border-radius: 0;
+  transform: none;
+  background-color: var(--list-marker-color);
+}
+
+/* __...__ is underlined prose; **...** retains the vault's bold treatment. */
+.markdown-source-view.mod-cm6 .cm-line :is(.notes-underline, .notes-underline .cm-strong) {
+  --bold-modifier: 0;
+  font-weight: 400;
+  color: var(--text-normal);
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+}
+
+.markdown-source-view.mod-cm6 .cm-line :is(.notes-underline-bold, .notes-underline-bold .cm-strong) {
+  font-weight: var(--notes-bold-weight, 700);
+  color: var(--notes-bold-color, var(--text-normal));
+}
+
+.markdown-source-view.mod-cm6 .cm-line :is(.notes-underline-italic, .notes-underline-italic .cm-em) {
+  font-style: italic;
+}
+
+.markdown-rendered .notes-underline {
+  font-weight: 400;
+  color: var(--text-normal);
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+}
+
+.markdown-rendered .notes-underline.notes-underline-bold {
+  font-weight: var(--notes-bold-weight, 700);
+  color: var(--notes-bold-color, var(--text-normal));
+}
+
+/* Hide completed __ delimiters and nested asterisk delimiters in Live Preview,
+ * exposing them when the caret is moved between their characters for editing. */
+.markdown-source-view.mod-cm6.is-live-preview .cm-line .notes-underline-delimiter {
+  font-size: 0;
+  line-height: 0;
+  letter-spacing: 0;
+  word-spacing: 0;
+  padding: 0;
+  color: transparent;
+  text-decoration: none;
+}
+
+.notes-emoji-suggestion {
+  display: flex;
+  align-items: center;
+  gap: 0.75em;
+}
+
+.notes-emoji-glyph {
+  flex: 0 0 1.5em;
+  font-size: 1.5em;
+  text-align: center;
+}
+
+.notes-emoji-details {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.notes-emoji-name {
+  color: var(--text-normal);
+}
+
+.notes-emoji-description {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  overflow-wrap: anywhere;
+}
+
+/* Four ordinary spaces should occupy four glyph advances, not Obsidian's
+   tab-width box. Only groups explicitly marked by spaces.js are affected. */
+.markdown-source-view.mod-cm6 .cm-indent.notes-literal-space-indent,
+.markdown-source-view.mod-cm6 .notes-literal-space-indent .cm-indent,
+.markdown-source-view.mod-cm6 .cm-indent:has(.notes-literal-space-indent) {
+  display: inline;
+  min-width: 0;
+  width: auto;
+}
+
+.markdown-source-view.mod-cm6 .cm-indent.notes-literal-space-indent::before,
+.markdown-source-view.mod-cm6 .notes-literal-space-indent .cm-indent::before,
+.markdown-source-view.mod-cm6 .cm-indent:has(.notes-literal-space-indent)::before {
+  display: none;
+  content: none;
+}
+
+/* Shared emoji classes keep command rows consistent with the emoji picker. */
+.notes-slash-suggestion .notes-slash-glyph {
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+}
+
+.hstack-template-validation { color: var(--text-error); white-space: pre-wrap; }
+
+/* Branding is scoped to hstack's own settings and help. */
+.hstack-settings-heading,
+.hstack-help-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.hstack-settings-heading {
+  margin-bottom: 1rem;
+}
+
+.hstack-settings-heading img,
+.hstack-help-heading img {
+  display: block;
+  flex: 0 0 32px;
+  border-radius: 6px;
+}
+
+.hstack-settings-heading h2 {
+  margin: 0;
+}

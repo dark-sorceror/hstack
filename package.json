@@ -1,0 +1,48 @@
+{
+  "name": "hstack",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A writing and agent context stack for Obsidian.",
+  "main": "main.js",
+  "bin": {
+    "hstack": "bin/hstack.cjs"
+  },
+  "license": "MIT",
+  "author": "Hao Yan",
+  "engines": {
+    "node": "^22.16.0 || >=24.0.0"
+  },
+  "scripts": {
+    "dev": "node esbuild.config.mjs --watch",
+    "build": "npm run typecheck && node esbuild.config.mjs && node scripts/build-cli.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "node scripts/test.mjs",
+    "check": "npm run lint && npm run format:check && npm run docs:check && npm run verify:wasm-source && npm run build && npm test && npm run verify:package",
+    "verify:package": "node scripts/verify-package.mjs",
+    "package": "npm run build && node scripts/package.mjs",
+    "deploy": "node scripts/deploy.mjs",
+    "build:wasm": "node scripts/wasm-build.mjs",
+    "version": "node scripts/version-bump.mjs && git add manifest.json versions.json",
+    "lint": "eslint src bin scripts esbuild.config.mjs eslint.config.mjs",
+    "format": "prettier --write src bin tests scripts *.mjs *.json .github/workflows/*.yml README.md CONTRIBUTING.md SECURITY.md docs",
+    "format:check": "prettier --check src bin tests scripts *.mjs *.json .github/workflows/*.yml README.md CONTRIBUTING.md SECURITY.md docs",
+    "verify:wasm-source": "node scripts/wasm-build.mjs --source-only",
+    "verify:wasm": "node scripts/wasm-build.mjs --check",
+    "docs:check": "node scripts/check-docs.mjs"
+  },
+  "devDependencies": {
+    "@codemirror/commands": "^6.11.1",
+    "@codemirror/language": "^6.11.0",
+    "@codemirror/state": "^6.5.0",
+    "@codemirror/view": "^6.38.0",
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^22.15.0",
+    "esbuild": "^0.25.0",
+    "eslint": "^10.14.0",
+    "globals": "^16.5.0",
+    "obsidian": "^1.14.4",
+    "prettier": "^3.9.10",
+    "typescript": "^5.9.0",
+    "typescript-eslint": "8.72.1"
+  }
+}

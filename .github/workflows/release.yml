@@ -1,0 +1,27 @@
+name: Draft release
+on:
+  push:
+    tags: ["[0-9]*.[0-9]*.[0-9]*"]
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Validate tag
+        run: node -e "if(process.env.GITHUB_REF_NAME!==require('./manifest.json').version) process.exit(1)"
+      - run: npm ci --ignore-scripts
+      - name: Install pinned Rust toolchain explicitly
+        run: rustup toolchain install 1.99.1 --profile minimal --target wasm32-unknown-unknown
+      - run: RUSTC="$(rustup which --toolchain 1.99.1 rustc)" npm run verify:wasm
+      - run: npm run check
+      - run: npm run package
+      - name: Create draft release with three plugin assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" "dist/$GITHUB_REF_NAME/main.js" "dist/$GITHUB_REF_NAME/manifest.json" "dist/$GITHUB_REF_NAME/styles.css" "dist/$GITHUB_REF_NAME/SHA256SUMS" --draft --title "$GITHUB_REF_NAME" --notes-file CHANGELOG.md

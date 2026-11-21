@@ -1,0 +1,35 @@
+---
+title: "hstack"
+description: "Write, find and update notes while keeping your Markdown in control."
+---
+
+Capture a rough note, clean up its spacing, and find the section you need. When
+a tool edits it, preview the change and reject it if you've typed since the read.
+
+<CardGroup cols={3}>
+  <Card title="Write your first note" icon="pen-to-square" href="/start/quickstart">
+    Try local formatting, contents and reversible typing helpers.
+  </Card>
+  <Card title="Connect a tool" icon="terminal" href="/guides/agent-setup">
+    Read live context and make revision-checked edits through the CLI.
+  </Card>
+  <Card title="Develop hstack" icon="code" href="/developers/setup">
+    Build the plugin, use a test vault and run the checks.
+  </Card>
+</CardGroup>
+
+## What runs locally
+
+Writing tools, emoji and English autocorrect work offline. The agent bridge
+provides context, search and guarded edits. It does not call a model or install
+an MCP server. You choose the external tool that uses it.
+
+## Current availability
+
+This is a desktop-only 1.0.0 candidate, not a Community Plugins listing.
+[Install from source](/start/installation) with Obsidian 1.14.4 or newer.
+macOS has native verification; Windows/Linux UI checks remain outstanding.
+
+After installation, writing features need no Node installation. Only SQL needs
+an external Node runtime. See [permissions and limits](/security) before
+connecting a tool to your notes.

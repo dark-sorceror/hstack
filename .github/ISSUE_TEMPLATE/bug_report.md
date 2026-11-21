@@ -1,15 +1,29 @@
 ---
 name: Bug report
-about: A minimal synthetic reproduction of unexpected behavior
+about: Describe reproducible behavior and its impact
 ---
 
-Obsidian app / installer version:
-hstack version:
-OS:
-Other input-related plugins:
+## Summary
 
-Steps, expected result, actual result:
+Describe the observed problem and when it occurs.
 
-Minimal sample Markdown (no private notes):
+## How to replicate
 
-Does it reproduce in a separate test vault with other community plugins disabled?
+1. Include app/installer, plugin and OS versions.
+2. Provide a minimal synthetic note and exact actions.
+3. State the observed and expected results.
+
+## Root cause
+
+Include a confirmed cause and source pointers if known; otherwise leave this out.
+
+## Impact
+
+Explain what the problem prevents or changes for users.
+
+## Acceptance criteria
+
+- [ ] The reproducer behaves as expected.
+- [ ] Related editing behavior remains covered.
+
+Do not include private notes or credentials.

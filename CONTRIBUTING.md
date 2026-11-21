@@ -17,3 +17,19 @@ network services or broad file writes unless the feature explicitly needs them.
 Before release, review data licenses and runtime disclosures. Explain the
 concrete behavior change and meaningful validation in PRs. Follow the existing
 syntax/style in a module. Run npm run package to verify the actual release shape.
+
+## Branches and commits
+
+Use feat/slug, fix/slug, refactor/slug, style/slug, chore/slug, perf/slug,
+docs/slug, test/slug, build/slug or ci/slug. main is the primary branch.
+Every change starts from a scoped issue and is reviewed in a corresponding PR.
+
+Commit subjects must be type(scope): concise summary with no description/body.
+The root commit is the sole exception: Initial Commit, containing only the title
+README.md, .gitattributes and .gitignore. Use the issue/PR templates, avoid unrelated
+scope, and distinguish completed checks from checks still to run.
+
+Prefer TypeScript for new runtime modules. Port remaining JavaScript through a
+separate behavior-preserving change with strict checking and parity coverage;
+do not use mass any or ts-nocheck annotations to simulate a completed migration.
+Build tooling may remain Node .mjs and tests may remain .cjs.

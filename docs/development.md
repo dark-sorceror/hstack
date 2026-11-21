@@ -47,3 +47,17 @@ The build script verifies the compiler version and never installs a toolchain
 or modifies shell setup. `verify:wasm` rebuilds into a temporary directory and
 compares bytes. `verify:wasm-source` checks the source/binary/toolchain record
 without requiring Rust. CI runs both kinds of checks.
+
+## Public versioning
+
+The first public release candidate is 1.0.0. Create the exact 1.0.0 release tag
+only when the release is ready. Later fixes increment the patch version;
+compatible features increment the minor version; breaking API changes increment
+the major version. The tag and manifest version must match.
+
+## Contribution workflow
+
+Start with a scoped issue and a topic branch named type/slug. Commit subjects use
+type(scope): summary and have no body. Link the issue in the PR, describe observable
+behavior and the changed boundaries, and report only validation actually performed.
+Keep unrelated formatting, migration and product behavior changes separate.

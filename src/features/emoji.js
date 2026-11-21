@@ -1,5 +1,6 @@
 "use strict";
 
+const { editorView } = require("../editor/adapter.js");
 const records = require("../data/emoji-data.json");
 const { protectedContext } = require("./logic.js");
 
@@ -9,7 +10,7 @@ function normalize(value) {
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/[_\s]+/g, "-")
-    .replace(/[^a-z0-9+\-]/g, "")
+    .replace(/[^a-z0-9+-]/g, "")
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "");
 }
@@ -110,12 +111,12 @@ function search(query, index = defaultIndex, limit = 30, usage = {}) {
 
 function triggerAt(line, column) {
   const before = line.slice(0, column);
-  const match = /:([a-z0-9_+\-]*)$/i.exec(before);
+  const match = /:([a-z0-9_+-]*)$/i.exec(before);
   if (!match) return null;
   const start = column - match[0].length;
   const prefix = before.slice(0, start);
   if (
-    /(?:\b[a-z][a-z0-9+.\-]*:\/\/|\bwww\.)\S*$/i.test(before) ||
+    /(?:\b[a-z][a-z0-9+.-]*:\/\/|\bwww\.)\S*$/i.test(before) ||
     /(?:^|\s)(?:https?|ftp|file|obsidian)$/i.test(prefix) ||
     (/\b\d{1,2}$/.test(prefix) && /^\d*$/.test(match[1]))
   )
@@ -126,12 +127,12 @@ function triggerAt(line, column) {
 function directCompletion(text, from, to, typed, index = defaultIndex) {
   if (from !== to || typed !== ":" || protectedContext(text, from)) return null;
   const before = text.slice(0, from);
-  const match = /:([a-z0-9_+\-]+)$/i.exec(before);
+  const match = /:([a-z0-9_+-]+)$/i.exec(before);
   if (!match) return null;
   const entry = index.aliases.get(normalize(match[1]));
   if (!entry) return null;
   const start = from - match[0].length;
-  if (/(?:\b[a-z][a-z0-9+.\-]*:\/\/|\bwww\.)\S*$/i.test(before)) return null;
+  if (/(?:\b[a-z][a-z0-9+.-]*:\/\/|\bwww\.)\S*$/i.test(before)) return null;
   return { from: start, to, insert: entry.emoji };
 }
 
@@ -150,7 +151,7 @@ function createEmojiSuggest(app, plugin, EditorSuggest) {
       const text = editor.getValue();
       const position = editor.posToOffset(cursor);
       if (plugin.logic.protectedContext(text, position)) return null;
-      if (editor.cm && plugin.inCode(editor.cm, position)) return null;
+      if (editorView(editor) && plugin.inCode(editorView(editor), position)) return null;
       return {
         start: { line: cursor.line, ch: trigger.column },
         end: cursor,
@@ -190,7 +191,7 @@ function createEmojiSuggest(app, plugin, EditorSuggest) {
       const candidate = line.slice(start.ch, end.ch);
       // A direct :shortcode: replacement may already have closed this menu.
       // Never replace unrelated text using a stale suggestion context.
-      if (end.line !== start.line || !/^:[a-z0-9_+\-]*:?$/i.test(candidate)) return;
+      if (end.line !== start.line || !/^:[a-z0-9_+-]*:?$/i.test(candidate)) return;
       if (line[end.ch] === ":") end.ch++;
       editor.replaceRange(value.emoji, start, end);
       editor.setCursor({ line: start.line, ch: start.ch + value.emoji.length });

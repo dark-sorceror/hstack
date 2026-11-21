@@ -1,6 +1,7 @@
 "use strict";
 
 // Native EditorSuggest is injected by main.js so this module also works in Node.
+const { editorView, highlightedSuggestion } = require("../editor/adapter.js");
 const { commands } = require("../commands/catalog.js");
 
 function usageCount(usage, id) {
@@ -56,7 +57,7 @@ function createSlashSuggest(app, plugin, EditorSuggest) {
       if (!trigger) return null;
       const position = editor.posToOffset(cursor);
       if (plugin.logic.protectedContext(editor.getValue(), position)) return null;
-      if (editor.cm && plugin.inCode(editor.cm, position)) return null;
+      if (editorView(editor) && plugin.inCode(editorView(editor), position)) return null;
       this.executing = false;
       return {
         start: { line: cursor.line, ch: trigger.column },
@@ -103,11 +104,7 @@ function createSlashSuggest(app, plugin, EditorSuggest) {
     highlightedSuggestion(context) {
       // Obsidian's native suggestion list tracks its keyboard selection here.
       // Fall back to the best live match when no native selection is available.
-      const list = this.suggestions;
-      const selected =
-        Array.isArray(list?.values) && Number.isInteger(list?.selectedItem)
-          ? list.values[list.selectedItem]
-          : null;
+      const selected = highlightedSuggestion(this);
       const matches = this.getSuggestions(context);
       return matches.find((value) => value.id === selected?.id) || matches[0];
     }

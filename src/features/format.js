@@ -1,5 +1,6 @@
 "use strict";
 
+const { isCommandPrefix } = require("../commands/catalog.js");
 const { protectedContext } = require("./logic.js");
 
 function quotedBody(line) {
@@ -178,11 +179,7 @@ function minimalChange(before, after) {
 function planFormat(text, from, to) {
   if (from < 0 || to < from || to > text.length) return null;
   const token = text.slice(from, to).trim().toLowerCase();
-  if (
-    !/^\/[a-z]*$/.test(token) ||
-    !["format", "tidy"].some((name) => name.startsWith(token.slice(1)))
-  )
-    return null;
+  if (!isCommandPrefix("format", token)) return null;
   const start = text.lastIndexOf("\n", from - 1) + 1;
   const newline = text.indexOf("\n", to),
     end = newline < 0 ? text.length : newline;

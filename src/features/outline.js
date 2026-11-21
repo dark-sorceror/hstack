@@ -1,5 +1,6 @@
 "use strict";
 
+const { isCommandPrefix } = require("../commands/catalog.js");
 const { protectedContext } = require("./logic.js");
 
 const START = "<!-- notes-toc:start -->";
@@ -20,7 +21,7 @@ function managedBlock(text) {
 
 function headingText(source) {
   const escapes = [];
-  let text = source.trim().replace(/\\([\\`*_{}\[\]()#+\-.!|>])/g, (_, char) => {
+  let text = source.trim().replace(/\\([\\`*_{}[\]()#+\-.!|>])/g, (_, char) => {
     escapes.push(char);
     return "\uE000" + (escapes.length - 1) + "\uE001";
   });
@@ -147,7 +148,7 @@ function scanHeadings(text) {
 function headingLink(title) {
   // Wiki delimiters cannot safely hold every literal heading. A normal
   // same-page Markdown link handles these rare names without broken syntax.
-  if (/[|\[\]\\]/.test(title)) {
+  if (/[|[\]\\]/.test(title)) {
     const label = title.replace(/[\\[\]*_`|]/g, "\\$&");
     const fragment = encodeURIComponent(title).replace(
       /[!'()*]/g,
@@ -172,11 +173,7 @@ function contentsBlock(headings) {
 function planTOC(text, from, to) {
   if (from < 0 || to < from || to > text.length) return null;
   const token = text.slice(from, to).trim().toLowerCase();
-  if (
-    !/^\/[a-z]*$/.test(token) ||
-    !["toc", "outline"].some((name) => name.startsWith(token.slice(1)))
-  )
-    return null;
+  if (!isCommandPrefix("toc", token)) return null;
   const lineStart = text.lastIndexOf("\n", from - 1) + 1;
   const nextLine = text.indexOf("\n", to);
   const lineEnd = nextLine < 0 ? text.length : nextLine;

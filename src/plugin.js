@@ -6,7 +6,11 @@ const { EditorView, Decoration, ViewPlugin } = require("@codemirror/view");
 const SlashHelpModal = require("./ui/slash-help.js");
 const TypingSettings = require("./ui/settings.js");
 
+const editorAdapter = require("./editor/adapter.js");
+const { handleKey } = require("./editor/keyboard.js");
+const { executeSlashCommand } = require("./commands/execute.js");
 const { restoreTemplates } = require("./public-api.js");
+
 const { normalizeSettings, createSettingsSaver } = require("./settings.js");
 
 module.exports = class HstackCore extends Plugin {
@@ -54,13 +58,7 @@ module.exports = class HstackCore extends Plugin {
     this.registerEditorSuggest(this.slashSuggest);
     // Iconize also registers a colon suggester with Lucide entries. Give our
     // colored-emoji picker first refusal, without disabling file/folder icons.
-    const suggesters = this.app.workspace.editorSuggest.suggests;
-    if (Array.isArray(suggesters)) {
-      for (const suggester of [this.slashSuggest, this.emojiSuggest]) {
-        const index = suggesters.indexOf(suggester);
-        if (index > 0) suggesters.unshift(...suggesters.splice(index, 1));
-      }
-    }
+    editorAdapter.prioritizeSuggesters(this.app, [this.slashSuggest, this.emojiSuggest]);
     this.registerMarkdownPostProcessor((element, context) =>
       this.markup.postprocessMarkup(element, context, this)
     );
@@ -145,94 +143,11 @@ module.exports = class HstackCore extends Plugin {
   }
 
   runSlashCommand(id, context, editor) {
-    const trigger = this.slash.triggerAt(editor.getLine(context.end.line), context.end.ch);
-    if (!trigger || trigger.column !== context.start.ch) return;
-    const from = editor.posToOffset(context.start),
-      to = editor.posToOffset(context.end);
-    const text = editor.getValue();
-    if (id === "toc") {
-      const plan = this.outline.planTOC(text, from, to);
-      if (!plan) {
-        new Notice(
-          this.outline.scanHeadings(text).length
-            ? "Couldn't update the contents safely. Check the existing contents block."
-            : "Add a heading with # first, then run /toc."
-        );
-        return;
-      }
-      this.applyEditorPlan(editor, plan, "input.notes-toc");
-      new Notice(
-        `${plan.updated ? "Updated" : "Inserted"} contents · ${plan.headingCount} headings`,
-        2200
-      );
-    } else if (id === "format") {
-      const plan = this.format.planFormat(text, from, to);
-      if (!plan) {
-        new Notice("Use /format on its own line outside a code block.");
-        return;
-      }
-      this.applyEditorPlan(editor, plan, "input.notes-format");
-      new Notice(
-        plan.changed ? "Markdown formatted" : "Markdown formatting is already consistent",
-        2200
-      );
-    } else if (id === "help") {
-      this.applyEditorPlan(
-        editor,
-        { changes: [{ from, to, insert: "" }], cursor: from },
-        "input.notes-command"
-      );
-      new SlashHelpModal(this.app, this).open();
-    } else {
-      const command = this.slash.commands.find((c) => c.id === id);
-      if (command?.run) {
-        try {
-          Promise.resolve(
-            command.run({
-              editor,
-              from,
-              to,
-              title: this.app.workspace.getActiveFile()?.basename || "",
-              app: this.app,
-            })
-          ).catch((error) => {
-            console.error("hstack command failed", error);
-            new Notice("Command failed: " + error.message);
-          });
-        } catch (error) {
-          console.error("hstack command failed", error);
-          new Notice("Command failed: " + error.message);
-        }
-      }
-    }
+    return executeSlashCommand(this, id, context, editor, { Notice, SlashHelpModal });
   }
 
   applyEditorPlan(editor, plan, userEvent) {
-    if (editor.cm) {
-      editor.cm.dispatch({
-        changes: plan.changes,
-        selection: EditorSelection.cursor(plan.cursor),
-        userEvent,
-        filter: false,
-        scrollIntoView: true,
-      });
-      return;
-    }
-    let result = editor.getValue();
-    for (const change of [...plan.changes].sort((a, b) => b.from - a.from))
-      result = result.slice(0, change.from) + change.insert + result.slice(change.to);
-    const before = result.slice(0, plan.cursor).split("\n");
-    editor.transaction(
-      {
-        changes: plan.changes.map((change) => ({
-          from: editor.offsetToPos(change.from),
-          to: editor.offsetToPos(change.to),
-          text: change.insert,
-        })),
-        selection: { from: { line: before.length - 1, ch: before.at(-1).length } },
-      },
-      userEvent
-    );
+    return editorAdapter.applyEditorPlan(editor, plan, userEvent);
   }
 
   recordSlash(id) {
@@ -280,18 +195,7 @@ module.exports = class HstackCore extends Plugin {
   }
 
   applyReplacement(view, plan, remember = true) {
-    const { raw, ...change } = plan;
-    const end = change.from + change.insert.length;
-    this.replacements.delete(view);
-    view.dispatch({
-      changes: change,
-      selection: EditorSelection.cursor(end),
-      userEvent: "input.type",
-      filter: false,
-      scrollIntoView: true,
-    });
-    if (raw && remember)
-      this.replacements.set(view, { from: change.from, to: end, text: change.insert, raw });
+    return editorAdapter.applyReplacement(this, view, plan, remember);
   }
 
   recordEmoji(emoji) {
@@ -302,184 +206,10 @@ module.exports = class HstackCore extends Plugin {
   }
 
   inCode(view, position) {
-    const node = view.domAtPos(position).node;
-    const element = node.nodeType === 1 ? node : node.parentElement;
-    return !!element?.closest(
-      ".HyperMD-codeblock, .cm-inline-code, .HyperMD-frontmatter, .cm-math, .HyperMD-math, .cm-url, .cm-hmd-internal-link"
-    );
+    return editorAdapter.inCode(view, position);
   }
 
   onKey(event, view) {
-    if (
-      view.state.readOnly ||
-      event.isComposing ||
-      view.composing ||
-      event.ctrlKey ||
-      event.metaKey ||
-      event.altKey
-    )
-      return false;
-    let selection = view.state.selection.main;
-    const singleCaret = view.state.selection.ranges.length === 1 && selection.empty;
-    if (
-      this.slashSuggest.context &&
-      ["Enter", "Tab", "ArrowUp", "ArrowDown", "Escape"].includes(event.key)
-    ) {
-      if (event.key === "Tab" && !event.shiftKey) {
-        const editor = this.slashSuggest.context.editor;
-        if (editor?.cm === view && this.slashSuggest.completeSuggestion(editor)) {
-          event.preventDefault();
-          event.stopPropagation();
-          return true;
-        }
-      } else return false;
-    }
-    if (
-      this.emojiSuggest.context &&
-      ["Enter", "Tab", "ArrowUp", "ArrowDown", "Escape"].includes(event.key)
-    )
-      return false;
-    if (event.key === "Enter" && !event.shiftKey && singleCaret && this.options.formatPairs) {
-      const plan = this.markup.enterPairPlan?.(
-        view.state.doc.toString(),
-        selection.from,
-        selection.to
-      );
-      if (plan) {
-        this.replacements.delete(view);
-        view.dispatch({
-          changes: plan.changes,
-          selection: EditorSelection.cursor(plan.cursor),
-          userEvent: "input.type",
-          filter: false,
-          scrollIntoView: true,
-        });
-        // Let the usual Enter command handle newlines and indentation using the
-        // cleaned-up text; empty child lists still pass through our list rules.
-        selection = view.state.selection.main;
-      }
-    }
-    if (event.key === "Backspace" && singleCaret) {
-      const replacement = this.replacements.get(view);
-      const change = this.logic.revertPlan(view.state.doc.toString(), selection.head, replacement);
-      if (change) {
-        if (replacement.kind === "autocorrect") this.autocorrect?.reject(replacement.word);
-        this.replacements.delete(view);
-        view.dispatch({
-          changes: change,
-          selection: EditorSelection.cursor(change.from + change.insert.length),
-          userEvent: "input.notes-revert",
-          filter: false,
-          scrollIntoView: true,
-        });
-        event.preventDefault();
-        return true;
-      }
-    }
-    if (event.key === " ") {
-      this.replacements.delete(view);
-      if (
-        this.options.autocorrect &&
-        singleCaret &&
-        this.typedWords.get(view) === selection.head &&
-        !this.inCode(view, selection.head)
-      ) {
-        const plan = this.autocorrectModule.boundaryPlan(
-          view.state.doc.toString(),
-          selection.head,
-          this.autocorrect
-        );
-        if (plan) {
-          const { original, ...replacement } = plan;
-          this.applyReplacement(view, replacement);
-          Object.assign(this.replacements.get(view), { kind: "autocorrect", word: original });
-          event.preventDefault();
-          return true;
-        }
-      }
-      if (!this.options.literalSpaces) return false;
-      // Bypass automatic transaction formatters for a literal Space key.
-      view.dispatch({
-        ...view.state.replaceSelection(" "),
-        userEvent: "input.type",
-        filter: false,
-        scrollIntoView: true,
-      });
-      event.preventDefault();
-      return true;
-    }
-    if (
-      this.options.formatPairs &&
-      ["*", "_"].includes(event.key) &&
-      !this.inCode(view, selection.from)
-    ) {
-      const plan = this.markup.pairPlan(
-        view.state.doc.toString(),
-        selection.from,
-        selection.to,
-        event.key
-      );
-      if (plan) {
-        this.replacements.delete(view);
-        view.dispatch({
-          changes: plan.changes,
-          selection: plan.selection
-            ? EditorSelection.range(plan.selection.anchor, plan.selection.head)
-            : EditorSelection.cursor(plan.cursor),
-          userEvent: "input.notes-pair",
-          filter: false,
-          scrollIntoView: true,
-        });
-        event.preventDefault();
-        return true;
-      }
-    }
-    // Closing a native auto-paired [] can be a key command rather than input.
-    if (
-      event.key === "]" &&
-      this.options.listShortcuts &&
-      singleCaret &&
-      !this.inCode(view, selection.head)
-    ) {
-      const plan = this.logic.prefixPlan(
-        view.state.doc.toString(),
-        selection.from,
-        selection.to,
-        "]"
-      );
-      if (plan) {
-        this.applyReplacement(view, plan, false);
-        event.preventDefault();
-        return true;
-      }
-    }
-    if (!["-", ">", "Shift"].includes(event.key)) this.replacements.delete(view);
-    if (!this.options.mixedLists || view.state.selection.ranges.length !== 1) return false;
-    if (!selection.empty || this.inCode(view, selection.head)) return false;
-    let action;
-    if (event.key === "Tab") action = event.shiftKey ? "outdent" : "indent";
-    else if (!event.shiftKey && (event.key === "Enter" || event.key === "Backspace"))
-      action = "exit";
-    else return false;
-    const line = view.state.doc.lineAt(selection.head);
-    const plan = this.logic.listPlan(
-      view.state.doc.toString(),
-      line.number - 1,
-      selection.head - line.from,
-      action,
-      {
-        tabSize: this.app.vault.getConfig("tabSize") || 4,
-        useTabs: this.app.vault.getConfig("useTab") !== false,
-      }
-    );
-    if (!plan) return false;
-    view.dispatch({
-      changes: plan.changes,
-      selection: EditorSelection.cursor(plan.cursor),
-      userEvent: "input.notes-list",
-      scrollIntoView: true,
-    });
-    event.preventDefault();
-    return true;
+    return handleKey(this, event, view);
   }
 };

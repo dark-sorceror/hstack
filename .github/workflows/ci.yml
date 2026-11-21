@@ -4,6 +4,19 @@ permissions:
   contents: read
 jobs:
   check:
+    strategy:
+      matrix:
+        node: ["22.16.0", "22"]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run check
+  rust:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -12,4 +25,8 @@ jobs:
           node-version: "22"
           cache: npm
       - run: npm ci --ignore-scripts
-      - run: npm run check
+      - name: Install pinned Rust toolchain explicitly
+        run: rustup toolchain install 1.99.1 --profile minimal --target wasm32-unknown-unknown
+      - name: Verify the shipped Wasm matches Rust source
+        run: RUSTC="$(rustup which --toolchain 1.99.1 rustc)" npm run verify:wasm
+      - run: node --test tests/autocorrect-core.test.cjs tests/autocorrect.test.cjs

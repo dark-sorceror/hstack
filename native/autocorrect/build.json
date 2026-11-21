@@ -1,0 +1,6 @@
+{
+  "rust": "1.99.1",
+  "target": "wasm32-unknown-unknown",
+  "sourceSHA256": "696772ba2ca3cf4199a9e13bb895b285e700950bda879cb12659dd0ba67633be",
+  "wasmSHA256": "ce14e9cec34d6a46f81c2c263908158abf09017b182208349cf7373c5a3ed90e"
+}

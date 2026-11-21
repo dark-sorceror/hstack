@@ -16,6 +16,9 @@ jobs:
       - name: Validate tag
         run: node -e "if(process.env.GITHUB_REF_NAME!==require('./manifest.json').version) process.exit(1)"
       - run: npm ci --ignore-scripts
+      - name: Install pinned Rust toolchain explicitly
+        run: rustup toolchain install 1.99.1 --profile minimal --target wasm32-unknown-unknown
+      - run: RUSTC="$(rustup which --toolchain 1.99.1 rustc)" npm run verify:wasm
       - run: npm run check
       - run: npm run package
       - name: Create draft release with three plugin assets

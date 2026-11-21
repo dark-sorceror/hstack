@@ -22,7 +22,9 @@
     "package": "npm run build && node scripts/package.mjs",
     "deploy": "node scripts/deploy.mjs",
     "build:wasm": "sh scripts/build-autocorrect.sh",
-    "version": "node scripts/version-bump.mjs && git add manifest.json versions.json"
+    "version": "node scripts/version-bump.mjs && git add manifest.json versions.json",
+    "verify:wasm": "node scripts/wasm-build.mjs --check",
+    "verify:wasm-source": "node scripts/wasm-build.mjs --source-only"
   },
   "devDependencies": {
     "@codemirror/language": "^6.11.0",

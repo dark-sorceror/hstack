@@ -10,6 +10,7 @@ const {
   pairPlan,
   enterPairPlan,
   postprocessMarkup,
+  createMarkupExtension,
 } = require("../src/features/markup.js");
 let checks = 0;
 function test(name, fn) {
@@ -298,6 +299,81 @@ test("explicit HTML strong is tracked without becoming underline", () => {
     getEmphasis("<strong>HTML</strong> __underlined__ **bold**").map((mark) => mark.markup),
     ["html", "__", "**"]
   );
+});
+test("ancestor roles match containment across nested, adjacent and crossing HTML spans", () => {
+  const fragments = [
+    "__under **bold** under__",
+    "**bold __under__ bold**",
+    "<strong>__under__</strong>",
+    "<strong>**left </strong> __middle** tail__",
+    "__*outer **inner** outer*__",
+    "**plain**",
+    "__plain__",
+    "<strong>html</strong>",
+    "`__code__`",
+    "\\__literal__",
+  ];
+  for (const first of fragments)
+    for (const second of fragments) {
+      const text = first + " and " + second;
+      const marks = getEmphasis(text);
+      for (const mark of marks) {
+        const parents = marks.filter(
+          (parent) => parent !== mark && parent.innerFrom <= mark.from && parent.innerTo >= mark.to
+        );
+        assert.equal(
+          mark.boldAncestor,
+          parents.some((parent) => parent.markup !== "__"),
+          text
+        );
+        assert.equal(
+          mark.underlineAncestor,
+          parents.some((parent) => parent.markup === "__"),
+          text
+        );
+      }
+    }
+});
+test("large documents retain every adjacent underline and nested emphasis role", () => {
+  const count = 10000;
+  const text = "__**bold** *italic*__\n".repeat(count);
+  const analysis = analyzeSource(text);
+  assert.equal(analysis.emphasis.length, count * 2);
+  assert.equal(analysis.nestedAsterisks.length, count * 2);
+  assert.equal(analysis.emphasis.filter((mark) => mark.underlineAncestor).length, count);
+  assert.equal(analysis.nestedAsterisks.filter((mark) => mark.bold).length, count);
+});
+test("disabled markup rendering skips source analysis and responds to feature toggles", () => {
+  let reads = 0;
+  const plugin = { options: { listStyles: false, underline: false } };
+  const none = [];
+  const Extension = createMarkupExtension(plugin, {
+    Decoration: { none, set: (ranges) => ranges },
+    ViewPlugin: { fromClass: (value) => value },
+  });
+  const view = {
+    state: {
+      doc: {
+        toString: () => {
+          reads++;
+          return "";
+        },
+      },
+      selection: { ranges: [] },
+    },
+    visibleRanges: [],
+    dom: { classList: { contains: () => false }, closest: () => null },
+  };
+  const extension = new Extension(view);
+  assert.equal(extension.decorations, none);
+  assert.equal(reads, 0);
+  plugin.options.underline = true;
+  extension.update({ view });
+  assert.equal(reads, 1);
+  plugin.options.underline = false;
+  extension.update({ view });
+  assert.equal(extension.decorations, none);
+  assert.equal(reads, 1);
 });
 test("source list scanning preserves list types and tasks", () => {
   const source =

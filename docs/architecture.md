@@ -85,6 +85,14 @@ Feature-specific heading, formatter and emphasis policies remain distinct to
 preserve their existing behavior. The refactor is checked against the previous
 LF protection rules at every offset across mixed contexts.
 
+Heading classification uses CRLF-aware source lines while retaining original
+UTF-16 offsets. Metadata combines lexical inline protection with the rendering
+scanner's list-aware code and HTML block mask. Display math is excluded from
+page headings. Emphasis ancestry and nested asterisk containment use sorted
+range indexes instead of comparing every pair of spans. Rendering skips analysis
+when both markup display features are disabled. Single-range typing plans and
+suggestion menus defer to native editing when multiple selections are present.
+
 ## Commands and persistence
 
 Built-in names and aliases come from one command catalog. Saved templates are

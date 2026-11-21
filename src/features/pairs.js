@@ -1,5 +1,6 @@
 "use strict";
 const { escaped, scanSource, getEmphasis } = require("../markdown/emphasis.js");
+const { createContainmentIndex } = require("../markdown/ranges.js");
 
 // Match complete one-, two-, or three-character emphasis runs. This is used
 // only to move over an existing closer, never to reinterpret ordinary text.
@@ -38,11 +39,13 @@ function getNestedAsteriskEmphasis(
   mask = scanSource(text).mask
 ) {
   const underlines = emphasis.filter((mark) => mark.markup === "__");
+  if (!underlines.length) return [];
+  const underlineContains = createContainmentIndex(underlines);
   return delimiterPairs(text, "*", mask)
     .filter(
       (pair) =>
         text.slice(pair.innerFrom, pair.innerTo).replace(/[*_]/g, "").trim() &&
-        underlines.some((mark) => mark.innerFrom <= pair.from && pair.to <= mark.innerTo)
+        underlineContains(pair.from, pair.to)
     )
     .map((pair) => {
       const length = pair.innerFrom - pair.from;

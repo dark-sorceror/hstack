@@ -15,3 +15,6 @@ First public release candidate. No public release or tag has been created yet.
 - Three-file Obsidian packaging, typed method contracts, scoped styles,
   lint/format checks, keyboard/Undo/lifecycle regressions, minimum-Node tests,
   and pinned Rust/Wasm rebuild verification.
+- Preserve native multiple-cursor input, CRLF contents/section offsets, and
+  code-aware retrieval metadata. Index emphasis containment to avoid repeated
+  comparisons across every formatting span.

@@ -1,4 +1,5 @@
 "use strict";
+const { createContainmentIndex } = require("./ranges.js");
 
 function escaped(text, position) {
   let slashes = 0;
@@ -172,21 +173,13 @@ function getEmphasis(text, scanned = scanSource(text)) {
   }
   parse(0, text.length);
   result.sort((a, b) => a.from - b.from || b.to - a.to);
+  // A token's own inner range starts after its opening delimiter, so it
+  // cannot contain itself. Index both roles instead of comparing every pair.
+  const boldContains = createContainmentIndex(result.filter((mark) => mark.markup !== "__"));
+  const underlineContains = createContainmentIndex(result.filter((mark) => mark.markup === "__"));
   for (const token of result) {
-    token.boldAncestor = result.some(
-      (parent) =>
-        parent !== token &&
-        parent.markup !== "__" &&
-        parent.innerFrom <= token.from &&
-        parent.innerTo >= token.to
-    );
-    token.underlineAncestor = result.some(
-      (parent) =>
-        parent !== token &&
-        parent.markup === "__" &&
-        parent.innerFrom <= token.from &&
-        parent.innerTo >= token.to
-    );
+    token.boldAncestor = boldContains(token.from, token.to);
+    token.underlineAncestor = underlineContains(token.from, token.to);
   }
   return result;
 }

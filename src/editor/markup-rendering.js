@@ -18,10 +18,19 @@ function createMarkupExtension(plugin, { Decoration, ViewPlugin }) {
         this.decorations = this.build(view);
       }
       update(update) {
-        if (update.docChanged || update.viewportChanged || update.selectionSet)
+        if (
+          update.docChanged ||
+          update.viewportChanged ||
+          update.selectionSet ||
+          this.listStyles !== plugin.options.listStyles ||
+          this.underline !== plugin.options.underline
+        )
           this.decorations = this.build(update.view);
       }
       build(view) {
+        this.listStyles = plugin.options.listStyles;
+        this.underline = plugin.options.underline;
+        if (this.listStyles === false && this.underline === false) return Decoration.none;
         const text = view.state.doc.toString();
         const analysis = analysisFor(plugin, text);
         const visible = (from, to) =>

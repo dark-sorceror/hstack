@@ -1,4 +1,5 @@
 "use strict";
+const { assertSQLiteCapabilities } = require("./sqlite-capabilities.js");
 
 // SQLite is injected by the host. This module opens only an ephemeral :memory:
 // database and never imports fs, opens a vault file, or registers an SQL function.
@@ -247,9 +248,10 @@ function executeSQL(DatabaseSync, snapshot, request) {
   let db;
   try {
     db = new DatabaseSync(":memory:", {
-      enableLoadExtension: false,
+      allowExtension: false,
       enableDoubleQuotedStringLiterals: false,
     });
+    assertSQLiteCapabilities(db);
     // Process-local SQLite heap ceiling; this module runs in its own child.
     db.exec(
       "PRAGMA hard_heap_limit=134217728; PRAGMA temp_store=MEMORY; PRAGMA trusted_schema=OFF;"

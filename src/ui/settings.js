@@ -117,7 +117,7 @@ module.exports = class TypingSettings extends PluginSettingTab {
     new Setting(this.containerEl)
       .setName("SQL Node executable")
       .setDesc(
-        "Optional absolute path to Node.js 22.13+ with node:sqlite. Empty uses automatic discovery. SQL only; typing features need no Node installation."
+        "Optional absolute path to Node.js 22.16+ on Node 22.x with node:sqlite. Empty uses automatic discovery. SQL only; typing features need no Node installation."
       )
       .addText((input) =>
         input.setValue(this.plugin.options.sqlNodePath || "").onChange(async (value) => {

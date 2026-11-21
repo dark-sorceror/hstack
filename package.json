@@ -1,6 +1,6 @@
 {
   "name": "hstack",
-  "version": "1.8.1",
+  "version": "1.0.0",
   "private": true,
   "description": "A writing and agent context stack for Obsidian.",
   "main": "main.js",

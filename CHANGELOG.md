@@ -1,12 +1,17 @@
 # Changelog
 
-## 1.8.0 — Unreleased
+## 1.0.0 — Unreleased
 
-- Organize the private typing helper into the standalone hstack source project.
-- Bundle runtime modules, emoji, dictionary, Wasm and isolated SQL runner into the
-  normal three-file Obsidian distribution; retain required notices.
-- Add TypeScript entry/API contracts and modular user-interface code.
-- Add persistent JSON slash templates, disposable script commands and public API v1.
-- Add agent bridge toggle and configurable SQL Node executable.
-- Add reproducible builds, package verification, deploy tooling, tests and draft
-  release workflow. Preserve the private helper's data through legacy deployment.
+First public release candidate. No public release or tag has been created yet.
+
+- Mixed numbered/bullet lists, literal spaces, dashed list markers, underline,
+  emphasis pairs, arrows/dashes, and callout-aware multiline paste.
+- Colored emoji search and offline Rust/WebAssembly English autocorrect with
+  immediate Backspace recovery and preserved personal/technical terms.
+- Local /toc (/outline), /format (/tidy), /help, persistent text templates,
+  and disposable commands through public API v1.
+- Live note context, section reads, text/metadata queries, read-only SQLite,
+  revision-checked edit previews/writes, and official-CLI JSON transport.
+- Three-file Obsidian packaging, typed method contracts, scoped styles,
+  lint/format checks, keyboard/Undo/lifecycle regressions, minimum-Node tests,
+  and pinned Rust/Wasm rebuild verification.

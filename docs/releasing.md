@@ -6,9 +6,9 @@ This is a prepared local project, not an accepted Community Plugin listing.
    The ID should stay stable after public installs. Recheck directory collisions.
 2. Test in a separate vault on supported Obsidian/installer/platform versions.
    Current manifest conservatively requires 1.14.4, the tested app version.
-   SQL additionally needs external Node 22.13+. Windows/Linux native UI testing
+   SQL additionally needs external Node 22.16+ (22.x) or 24+. Windows/Linux native UI testing
    and review of host-internal APIs remain necessary before wider support claims.
-3. Run `npm ci`, `npm run check`, `npm run package`. Rebuild Wasm if Rust changed.
+3. Run `npm ci`, `npm run check`, `npm run package`. Rebuild Wasm if Rust changed; run `npm run verify:wasm` with the pinned compiler.
    Review `docs/architecture.md` host-internal API risks and official guidance.
 4. Create a public GitHub repository for this source (manual owner choice).
    No private notes, data.json, tokens, generated main.js, node_modules or local
@@ -26,8 +26,9 @@ This is a prepared local project, not an accepted Community Plugin listing.
 8. Announce only after review and installation work. Maintain CHANGELOG and
    compatibility versions, especially editor internals and SQLite prerequisites.
 
-The source uses incremental TS/JS migration. The typed entry/API pass tsc; this
-does not imply the legacy JS passed a full Obsidian-specific lint audit. Such
+The source uses incremental TS/JS migration. The typed entry/API and selected checked-JS boundaries pass tsc; generic ESLint
+checks run on all runtime JavaScript. This does not imply a full Obsidian-specific
+lint audit. Such
 review may require changes before acceptance. The three-file smoke test validates
 asset packaging and runtime loading using a mock host; native UI testing remains
 part of each release. Nothing in this repo automatically publishes a release.

@@ -6,10 +6,10 @@ hstack combines small writing tools with live, revision-aware access to an
 Obsidian vault. Write raw notes, navigate and format them with local commands,
 then let an agent retrieve the right context and propose focused edits.
 
-**Status:** local 1.8.0 packaging candidate. Not published to the Community
+**Status:** local 1.0.0 release candidate. Not published to the Community
 Plugins directory yet. Desktop only. Minimum tested Obsidian version: 1.14.4.
 macOS has live testing; Windows/Linux still need native-app testing before a
-public support claim. SQL needs a separately installed Node.js 22.13+ runtime.
+public support claim. SQL needs a separately installed Node.js 22.16+ (22.x) or 24+ runtime.
 Other writing features do not require a local Node installation.
 
 ## What you get
@@ -41,7 +41,7 @@ npm run check
 npm run package
 ```
 
-Copy `main.js`, `manifest.json`, and `styles.css` from `dist/1.8.0/` into
+Copy `main.js`, `manifest.json`, and `styles.css` from `dist/1.0.0/` into
 `<vault>/<config-dir>/plugins/hstack/`, then enable **hstack** in Community
 plugins. The usual configuration directory is `.obsidian`; use your vault's
 actual directory if customized. Never run the old typing helper and hstack
@@ -122,6 +122,9 @@ src/main.ts             TypeScript plugin entry
 src/api.ts              Public API contracts
 src/plugin.js           Editor integration and feature lifecycle
 src/features/           Small, independently tested writing algorithms
+src/editor/             Keyboard, editor compatibility and rendering adapters
+src/markdown/           Shared lexical index and source/emphasis analysis
+src/commands/           Command catalog and dispatch
 src/ui/                 Settings and slash help
 src/agent/              Context, queries, patches, isolated SQLite runner
 src/autocorrect/        JavaScript/Wasm integration
@@ -133,10 +136,19 @@ tests/                 Unit, integration and preservation checks
 docs/                  User, API, architecture and release documentation
 ```
 
-The TypeScript entry/API are checked strictly. Existing JavaScript modules are
-not yet fully type-checked; conversion is incremental. Release `main.js` is a
+The TypeScript entry/API and method-specific request/result contracts are checked
+strictly. Settings, the source index and SQLite capability checks also opt into
+checked JavaScript. Remaining JavaScript migration is incremental. Release `main.js` is a
 CommonJS bundle with assets and required notices embedded; no runtime npm
 packages are downloaded. CodeMirror and Obsidian stay external host dependencies.
+
+## Maintainability checks
+
+`npm run check` includes linting, formatting, source/Wasm provenance, typed API
+contracts, editing/lifecycle regression tests and the three-file install smoke
+test. CI also tests the minimum Node 22.16.0 runtime and rebuilds the shipped
+Wasm with the compiler pinned in `rust-toolchain.toml`. See the development guide
+for local Rust verification. Watch mode tracks the embedded SQL worker's inputs.
 
 ## License and credits
 

@@ -93,6 +93,9 @@ Limits: SQL 8,192 chars, 128 bound params, 1-second child-process budget,
 128 MiB SQLite heap, 32 MiB snapshot, 200 rows max, 4,096 chars per cell,
 512 KiB response max. No persistent DB, extensions, file functions or PRAGMA.
 Set an absolute **SQL Node executable** in settings if discovery fails.
+Capabilities probes the executable for the required SQLite methods and reports
+`available:false` with a reason if it is incompatible. On the Node 22.x line,
+22.16.0 is the minimum; current 24+ runtimes are also supported.
 
 ## Safe patch sequence
 
@@ -114,3 +117,9 @@ Common errors: `BRIDGE_DISABLED`, `NOTE_NOT_FOUND`, `INVALID_PATH`,
 `SQL_UNAVAILABLE`, `SQL_BUSY`, `SQL_TIMEOUT`, `READ_ONLY_SQL`, `RESULT_TOO_LARGE`.
 The wrapper exits nonzero for errors and validates response IDs. If a write
 loses its acknowledgement or times out, re-read before retrying.
+
+TypeScript contracts in `src/api.ts` correlate each method with its required
+parameters and response. For example, patch requires `expectedRevision`, and a
+successful SQL result has typed columns/rows. Runtime validation remains in
+place for JavaScript/CLI callers. Existing API v1 envelopes and aliases are
+preserved.

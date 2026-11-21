@@ -6,7 +6,9 @@ The official sample uses TypeScript plus esbuild. Obsidian runs JavaScript.
 hstack uses a strict TypeScript entry/public contracts, existing JavaScript
 algorithms, and a Rust core compiled to Wasm. This preserves tested logic while
 allowing gradual typed migration. `allowJs` does not mean the JavaScript is
-fully type-checked; `checkJs` is currently false.
+fully type-checked. Global `checkJs` remains false; the source index, settings
+normalizer and SQLite capability boundary opt in with `@ts-check`. API requests
+and results are typed per method, with compile-time negative tests.
 
 The source repository is independent of a vault. esbuild bundles static imports,
 JSON, dictionary text, Wasm bytes and the fixed SQL runner into one CommonJS
@@ -23,7 +25,9 @@ assets requires rebuilding the bundle.
 
 `src/main.ts` exposes the typed public facade. `src/plugin.js` initializes options,
 registers input handlers, suggesters, rendering hooks and settings, and owns
-cleanup. `src/features` contains pure plans and presentation adapters. `src/ui`
+cleanup. `src/features` contains pure plans and small compatibility facades. Keyboard
+precedence, editor transactions and host-private integration points live in
+`src/editor`; source analysis and pairing/rendering are separate modules. `src/ui`
 contains settings and help. Editor changes are synchronous plans, not delayed
 whole-document rewrites. Autocorrect initializes asynchronously and typing does
 not wait for it. Slash command registries are per plugin instance.
@@ -33,6 +37,10 @@ register callbacks and return disposers. The text template path never evaluates
 strings. Built-in command names/aliases cannot be overwritten.
 
 ## Agent reads and writes
+
+The dispatcher delegates live note access and guarded writes to `note-store`,
+source-derived metadata to `metadata`, and process/runtime handling to
+`sql-process`. Revision check and write stay together in the note store.
 
 The bridge reads saved content and overlays the current source-mode editor.
 Source-derived headings/links/tags/properties share the text's SHA-256 revision.
@@ -66,3 +74,29 @@ Obsidian's review actually passes.
 
 The personal theme snippet is separate. Feature CSS is scoped to classes/data
 attributes created by this plugin. Keep styling changes out of algorithmic edits.
+
+## Shared source index
+
+`src/markdown/source.js` indexes line starts and block state once per document.
+Protection queries scan only the relevant line prefix; metadata keeps an explicit
+index for its full scan. A bounded two-document cache serves repeated typing and
+suggestion checks. CRLF/BOM classification preserves original UTF-16 offsets.
+Feature-specific heading, formatter and emphasis policies remain distinct to
+preserve their existing behavior. The refactor is checked against the previous
+LF protection rules at every offset across mixed contexts.
+
+## Commands and persistence
+
+Built-in names and aliases come from one command catalog. Saved templates are
+restored at startup and disposed on unload. A typed settings normalizer and one
+serialized write queue serve feature settings and usage counters. Registries
+remain per-instance. Invalid persisted templates report an error without
+rewriting the saved configuration or disabling typing helpers.
+
+## Build consistency
+
+The SQL worker is a virtual build dependency with explicit watch files for its
+entry and transitive inputs. The Node runtime is capability-probed, not inferred
+from an executable's existence. Rust source and toolchain hashes accompany the
+Wasm binary; CI reproduces the binary with pinned Rust and remapped source paths.
+The Rust lookup algorithm and editor keyboard priority remain unchanged.

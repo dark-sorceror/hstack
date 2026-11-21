@@ -15,7 +15,8 @@
   "scripts": {
     "dev": "node esbuild.config.mjs --watch",
     "build": "npm run typecheck && node esbuild.config.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node scripts/test.mjs"
   },
   "devDependencies": {
     "@codemirror/language": "^6.11.0",

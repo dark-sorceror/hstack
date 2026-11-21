@@ -1,5 +1,6 @@
 "use strict";
 const { lexicalFor } = require("../markdown/source.js");
+const { scanSource } = require("../markdown/emphasis.js");
 
 function headingsFor(outline, text) {
   const headings = outline.scanHeadings(text).map((h) => ({
@@ -40,6 +41,9 @@ function createMetadataReader(app, parseYaml, fileFor) {
       linkRanges = [],
       tags = new Set(),
       properties = [];
+    // Reuse rendering's list-aware code/HTML block classification. Inline
+    // protection remains lexical so actual wiki links are still discoverable.
+    const { blockMask } = scanSource(content);
     const frontmatter = /^\uFEFF?---\r?\n([\s\S]*?)\r?\n(?:---|\.\.\.)(?:\r?\n|$)/.exec(content);
     let propertiesError = null;
     if (frontmatter) {
@@ -60,7 +64,7 @@ function createMetadataReader(app, parseYaml, fileFor) {
       }
     }
     for (const match of content.matchAll(/!?\[\[([^\]\n]+)\]\]|!?\[([^\]\n]*)\]\(([^)\n]+)\)/g)) {
-      if (analysis.protectedAt(match.index)) continue;
+      if (blockMask[match.index] || analysis.protectedAt(match.index)) continue;
       linkRanges.push({ from: match.index, to: match.index + match[0].length });
       const raw = match[1] ? match[1].split("|")[0] : match[3].replace(/^<|>$/g, "");
       const hash = raw.indexOf("#"),
@@ -87,6 +91,7 @@ function createMetadataReader(app, parseYaml, fileFor) {
       const offset = match.index + match[0].indexOf("#");
       if (
         /[\p{L}_/-]/u.test(match[1]) &&
+        !blockMask[offset] &&
         !linkRanges.some((range) => offset >= range.from && offset < range.to) &&
         !analysis.protectedAt(offset)
       )

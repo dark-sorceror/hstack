@@ -459,3 +459,63 @@ test("agent bridge setting can disable reads/writes while leaving capability dis
   );
   bridge.dispose();
 });
+
+test("closed CRLF sections and patches use the original source offsets and revision", async () => {
+  const text = "# Root 😀\r\nintro\r\n## Child\r\nbody\r\n# End\r\n";
+  const f = fixture({ "CRLF.md": text });
+  const section = ok(await f.request("readSection", { path: "CRLF.md", heading: "Child" }));
+  assert.equal(section.from, text.indexOf("## Child"));
+  assert.equal(section.sectionTo, text.indexOf("# End"));
+  assert.equal(section.text, "## Child\r\nbody\r\n");
+  assert.deepEqual(section.headingPath, ["Root 😀", "Child"]);
+  ok(
+    await f.request("patch", {
+      path: "CRLF.md",
+      expectedRevision: section.revision,
+      dryRun: false,
+      edits: [{ from: section.from, to: section.sectionTo, text: "## Child\r\nupdated\r\n" }],
+    })
+  );
+  assert.equal(f.saved.get("CRLF.md"), text.replace("body", "updated"));
+});
+
+test("retrieval excludes code metadata while retaining nested list prose", async () => {
+  const text = [
+    "# Real",
+    "",
+    "    [[Target]] #hidden",
+    "\t[[Target]] #tabbed",
+    "",
+    "<pre>",
+    "[[Target]] #html",
+    "</pre>",
+    "",
+    "$$",
+    "# Fake",
+    "[[Target]] #math",
+    "$$",
+    "",
+    "- Parent",
+    "  continuation [[Target]] #visible",
+    "",
+    "      [[Target]] #nested-code",
+    "",
+  ].join("\r\n");
+  const f = fixture({ "Code.md": text, "Target.md": "target" });
+  const context = ok(await f.request("context", { path: "Code.md" }));
+  assert.deepEqual(
+    context.headings.map((h) => h.heading),
+    ["Real"]
+  );
+  assert.deepEqual(context.tags, ["#visible"]);
+  assert.equal(context.links.length, 1);
+  assert.equal(context.links[0].target, "Target.md");
+  assert.equal(context.links[0].line, 15);
+  assert.equal(ok(await f.request("query", { tag: "hidden" })).matches.length, 0);
+  assert.equal(
+    ok(await f.request("query", { tag: "visible", linksTo: "Target.md" })).matches.length,
+    1
+  );
+  const sql = ok(await f.request("sql", { sql: "SELECT tag FROM tags ORDER BY tag" }));
+  assert.deepEqual(sql.rows, [["#visible"]]);
+});

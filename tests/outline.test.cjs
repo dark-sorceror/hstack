@@ -153,4 +153,53 @@ test("literal managed markers inside fenced code cannot hijack TOC refresh", () 
   assert.equal(plan.headingCount, 1);
   assert.ok(apply(source, plan).endsWith(source.slice(source.indexOf("```md"))));
 });
+test("CRLF headings preserve original UTF-16 offsets across YAML, fences and setext titles", () => {
+  const source =
+    "\uFEFF---\r\ntitle: note\r\n---\r\n# Root 😀\r\n```md\r\n# Fake\r\n```\r\n\r\nChild\r\n---\r\n";
+  assert.deepEqual(scanHeadings(source), [
+    { level: 1, text: "Root 😀", from: source.indexOf("# Root"), line: 3 },
+    { level: 2, text: "Child", from: source.indexOf("Child"), line: 8 },
+  ]);
+});
+test("CRLF contents insertion and refresh preserve line endings and managed block identity", () => {
+  const source = "/toc\r\n\r\n# Root\r\n## Child\r\n";
+  const first = command(source);
+  const output = apply(source, first);
+  assert.equal(first.headingCount, 2);
+  assert.equal(output.replaceAll("\r\n", "").includes("\n"), false);
+  assert.ok(output.endsWith("\r\n\r\n# Root\r\n## Child\r\n"));
+  const refreshSource = "/outline\r\n" + output;
+  const refresh = command(refreshSource, "/outline");
+  assert.equal(refresh.updated, true);
+  assert.equal(apply(refreshSource, refresh), output);
+  assert.equal(output.slice(first.cursor - END.length, first.cursor), END);
+});
+test("display math cannot contribute headings or poison subsequent fence detection", () => {
+  for (const eol of ["\n", "\r\n"]) {
+    const source = [
+      "$$",
+      "# Fake",
+      "```",
+      "$$",
+      "",
+      "$$ x $$",
+      "# Real",
+      "```md",
+      "# Code",
+      "```",
+      "# After",
+    ].join(eol);
+    assert.deepEqual(
+      scanHeadings(source).map((h) => h.text),
+      ["Real", "After"]
+    );
+    const indented = ["    $$", "    code", "", "# Real", "- Parent", "  $$", "", "# After"].join(
+      eol
+    );
+    assert.deepEqual(
+      scanHeadings(indented).map((h) => h.text),
+      ["Real", "After"]
+    );
+  }
+});
 console.log(`${checks} outline checks passed.`);

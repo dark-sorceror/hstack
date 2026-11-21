@@ -2,15 +2,16 @@
 
 const { isCommandPrefix } = require("../commands/catalog.js");
 const { protectedContext } = require("./logic.js");
+const { sourceLines } = require("../markdown/source.js");
 
 const START = "<!-- notes-toc:start -->";
 const END = "<!-- notes-toc:end -->";
 
 function managedBlock(text) {
-  const starts = [...text.matchAll(/^<!-- notes-toc:start -->[ \t]*$/gm)].filter(
+  const starts = [...text.matchAll(/^<!-- notes-toc:start -->[ \t]*(?=\r?$)/gm)].filter(
     (match) => !protectedContext(text, match.index)
   );
-  const ends = [...text.matchAll(/^<!-- notes-toc:end -->[ \t]*$/gm)].filter(
+  const ends = [...text.matchAll(/^<!-- notes-toc:end -->[ \t]*(?=\r?$)/gm)].filter(
     (match) => !protectedContext(text, match.index)
   );
   if (!starts.length && !ends.length) return undefined;
@@ -49,17 +50,16 @@ function headingText(source) {
 function scanHeadings(text) {
   const managed = managedBlock(text);
   const result = [],
-    lines = text.split("\n");
-  let offset = 0,
-    fence = null,
+    lines = sourceLines(text);
+  let fence = null,
+    math = false,
     comment = false,
-    yaml = /^\uFEFF?---[ \t]*$/.test(lines[0] || "");
+    yaml = /^\uFEFF?---[ \t]*$/.test(lines[0]?.value || "");
   let previous = null,
     listParents = [];
   for (let index = 0; index < lines.length; index++) {
-    const raw = lines[index],
-      from = offset;
-    offset += raw.length + 1;
+    // Classify without the CR while retaining the original source offsets.
+    const { value: raw, from } = lines[index];
     if (managed && from >= managed.from && from < managed.to) {
       previous = null;
       continue;
@@ -72,6 +72,11 @@ function scanHeadings(text) {
     if (fence) {
       const close = /^\s*(`{3,}|~{3,})[ \t]*$/.exec(raw);
       if (close && close[1][0] === fence.char && close[1].length >= fence.length) fence = null;
+      previous = null;
+      continue;
+    }
+    if (math) {
+      if (/^\s*\$\$\s*$/.test(raw)) math = false;
       previous = null;
       continue;
     }
@@ -117,6 +122,11 @@ function scanHeadings(text) {
       continue;
     }
     if (line.trim()) listParents = [];
+    if (/^\s*\$\$/.test(line)) {
+      math = (line.match(/(?<!\\)\$\$/g) || []).length % 2 === 1;
+      previous = null;
+      continue;
+    }
     const atx = /^ {0,3}(#{1,6})(?:[ \t]+(.*?)|[ \t]*)$/.exec(line);
     if (atx) {
       const title = headingText((atx[2] || "").replace(/[ \t]+#+[ \t]*$/, ""));
@@ -176,7 +186,7 @@ function planTOC(text, from, to) {
   if (!isCommandPrefix("toc", token)) return null;
   const lineStart = text.lastIndexOf("\n", from - 1) + 1;
   const nextLine = text.indexOf("\n", to);
-  const lineEnd = nextLine < 0 ? text.length : nextLine;
+  const lineEnd = nextLine < 0 ? text.length : nextLine - (text[nextLine - 1] === "\r" ? 1 : 0);
   if (
     text.slice(lineStart, from).trim() ||
     text.slice(to, lineEnd).trim() ||
@@ -188,19 +198,20 @@ function planTOC(text, from, to) {
   if (existing === null) return null;
   const headings = scanHeadings(text);
   if (!headings.length) return null;
-  const block = contentsBlock(headings),
+  const eol = text.includes("\r\n") ? "\r\n" : "\n";
+  const block = contentsBlock(headings).replaceAll("\n", eol),
     changes = [];
   let blockFrom;
   if (existing) {
     changes.push({ from: existing.from, to: existing.to, insert: block });
     if (lineStart < existing.from || lineEnd > existing.to) {
       if (lineStart < existing.to && lineEnd > existing.from) return null;
-      changes.push({ from: lineStart, to: nextLine < 0 ? lineEnd : lineEnd + 1, insert: "" });
+      changes.push({ from: lineStart, to: nextLine < 0 ? lineEnd : nextLine + 1, insert: "" });
     }
     blockFrom = existing.from;
   } else {
     const after = text.slice(lineEnd);
-    const padding = after.startsWith("\n\n") ? "" : after.startsWith("\n") ? "\n" : "\n\n";
+    const padding = after.startsWith(eol + eol) ? "" : after.startsWith(eol) ? eol : eol + eol;
     changes.push({ from: lineStart, to: lineEnd, insert: block + padding });
     blockFrom = lineStart;
   }

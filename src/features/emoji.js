@@ -4,9 +4,14 @@ const records = require("../data/emoji-data.json");
 const { protectedContext } = require("./logic.js");
 
 function normalize(value) {
-  return String(value || "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase().replace(/[_\s]+/g, "-").replace(/[^a-z0-9+\-]/g, "")
-    .replace(/-+/g, "-").replace(/^-|-$/g, "");
+  return String(value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[_\s]+/g, "-")
+    .replace(/[^a-z0-9+\-]/g, "")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
 }
 
 function buildIndex(data = records) {
@@ -23,8 +28,11 @@ function buildIndex(data = records) {
     if (!name) continue;
     names.add(name);
     const entry = {
-      emoji: record.emoji, name, aliases: [...names], description: record.description || name,
-      tags: (record.tags || []).map(normalize)
+      emoji: record.emoji,
+      name,
+      aliases: [...names],
+      description: record.description || name,
+      tags: (record.tags || []).map(normalize),
     };
     entry.searchText = [entry.name, ...entry.aliases, ...entry.tags, descriptionName].join(" ");
     entries.push(entry);
@@ -32,8 +40,33 @@ function buildIndex(data = records) {
     // Prefer established gemoji aliases over a later descriptive alias collision.
     for (const alias of entry.aliases) if (!aliases.has(alias)) aliases.set(alias, entry);
   }
-  const popular = ["👍", "👎", "😀", "😊", "❤️", "✅", "🔥", "🚀", "👀", "🎉", "🤔", "💡", "⚠️", "🙌", "👏", "🙏", "💪", "🐛", "📌", "📝", "🎯", "⭐", "💯"]
-    .map(emoji => byEmoji.get(emoji)).filter(Boolean);
+  const popular = [
+    "👍",
+    "👎",
+    "😀",
+    "😊",
+    "❤️",
+    "✅",
+    "🔥",
+    "🚀",
+    "👀",
+    "🎉",
+    "🤔",
+    "💡",
+    "⚠️",
+    "🙌",
+    "👏",
+    "🙏",
+    "💪",
+    "🐛",
+    "📌",
+    "📝",
+    "🎯",
+    "⭐",
+    "💯",
+  ]
+    .map((emoji) => byEmoji.get(emoji))
+    .filter(Boolean);
   return { entries, aliases, popular };
 }
 
@@ -48,25 +81,31 @@ function search(query, index = defaultIndex, limit = 30, usage = {}) {
   const normalized = normalize(query);
   if (!normalized) {
     const used = new Set();
-    return [...index.popular, ...index.entries].filter(entry => {
-      if (used.has(entry.emoji)) return false;
-      used.add(entry.emoji);
-      return true;
-    }).map((entry, order) => ({ entry, order, usage: usageCount(usage, entry.emoji) }))
+    return [...index.popular, ...index.entries]
+      .filter((entry) => {
+        if (used.has(entry.emoji)) return false;
+        used.add(entry.emoji);
+        return true;
+      })
+      .map((entry, order) => ({ entry, order, usage: usageCount(usage, entry.emoji) }))
       .sort((a, b) => b.usage - a.usage || a.order - b.order)
-      .slice(0, limit).map(result => result.entry);
+      .slice(0, limit)
+      .map((result) => result.entry);
   }
   const terms = normalized.split("-").filter(Boolean);
-  return index.entries.map((entry, order) => {
-    let score = Infinity;
-    if (entry.aliases.includes(normalized)) score = 0;
-    else if (entry.aliases.some(alias => alias.startsWith(normalized))) score = 1;
-    else if (entry.aliases.some(alias => alias.includes(normalized))) score = 2;
-    else if (terms.every(term => entry.searchText.includes(term))) score = 3;
-    return { entry, score, order, usage: usageCount(usage, entry.emoji) };
-  }).filter(result => Number.isFinite(result.score))
+  return index.entries
+    .map((entry, order) => {
+      let score = Infinity;
+      if (entry.aliases.includes(normalized)) score = 0;
+      else if (entry.aliases.some((alias) => alias.startsWith(normalized))) score = 1;
+      else if (entry.aliases.some((alias) => alias.includes(normalized))) score = 2;
+      else if (terms.every((term) => entry.searchText.includes(term))) score = 3;
+      return { entry, score, order, usage: usageCount(usage, entry.emoji) };
+    })
+    .filter((result) => Number.isFinite(result.score))
     .sort((a, b) => a.score - b.score || b.usage - a.usage || a.order - b.order)
-    .slice(0, limit).map(result => result.entry);
+    .slice(0, limit)
+    .map((result) => result.entry);
 }
 
 function triggerAt(line, column) {
@@ -75,9 +114,12 @@ function triggerAt(line, column) {
   if (!match) return null;
   const start = column - match[0].length;
   const prefix = before.slice(0, start);
-  if (/(?:\b[a-z][a-z0-9+.\-]*:\/\/|\bwww\.)\S*$/i.test(before) ||
-      /(?:^|\s)(?:https?|ftp|file|obsidian)$/i.test(prefix) ||
-      /\b\d{1,2}$/.test(prefix) && /^\d*$/.test(match[1])) return null;
+  if (
+    /(?:\b[a-z][a-z0-9+.\-]*:\/\/|\bwww\.)\S*$/i.test(before) ||
+    /(?:^|\s)(?:https?|ftp|file|obsidian)$/i.test(prefix) ||
+    (/\b\d{1,2}$/.test(prefix) && /^\d*$/.test(match[1]))
+  )
+    return null;
   return { column: start, query: match[1] };
 }
 
@@ -109,7 +151,11 @@ function createEmojiSuggest(app, plugin, EditorSuggest) {
       const position = editor.posToOffset(cursor);
       if (plugin.logic.protectedContext(text, position)) return null;
       if (editor.cm && plugin.inCode(editor.cm, position)) return null;
-      return { start: { line: cursor.line, ch: trigger.column }, end: cursor, query: trigger.query };
+      return {
+        start: { line: cursor.line, ch: trigger.column },
+        end: cursor,
+        query: trigger.query,
+      };
     }
 
     getSuggestions(context) {
@@ -154,4 +200,12 @@ function createEmojiSuggest(app, plugin, EditorSuggest) {
   })();
 }
 
-module.exports = { normalize, buildIndex, search, triggerAt, directCompletion, createEmojiSuggest, defaultIndex };
+module.exports = {
+  normalize,
+  buildIndex,
+  search,
+  triggerAt,
+  directCompletion,
+  createEmojiSuggest,
+  defaultIndex,
+};

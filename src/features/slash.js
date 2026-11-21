@@ -2,9 +2,27 @@
 
 // Native EditorSuggest is injected by main.js so this module also works in Node.
 const commands = Object.freeze([
-  Object.freeze({ id: "toc", name: "toc", aliases: ["outline"], icon: "📑", description: "Insert a table of contents for this note" }),
-  Object.freeze({ id: "format", name: "format", aliases: ["tidy"], icon: "🧹", description: "Format this note’s Markdown spacing" }),
-  Object.freeze({ id: "help", name: "help", aliases: [], icon: "💡", description: "See available commands and keyboard shortcuts" })
+  Object.freeze({
+    id: "toc",
+    name: "toc",
+    aliases: ["outline"],
+    icon: "📑",
+    description: "Insert a table of contents for this note",
+  }),
+  Object.freeze({
+    id: "format",
+    name: "format",
+    aliases: ["tidy"],
+    icon: "🧹",
+    description: "Format this note’s Markdown spacing",
+  }),
+  Object.freeze({
+    id: "help",
+    name: "help",
+    aliases: [],
+    icon: "💡",
+    description: "See available commands and keyboard shortcuts",
+  }),
 ]);
 
 function usageCount(usage, id) {
@@ -15,13 +33,20 @@ function usageCount(usage, id) {
 function search(query = "", usage = {}, source = commands) {
   const normalized = String(query).toLowerCase().replace(/^\//, "");
   if (!/^[a-z-]*$/.test(normalized)) return [];
-  return source.map((command, order) => {
-    const names = [command.name, ...command.aliases];
-    const score = !normalized || names.includes(normalized) ? 0 : names.some(name => name.startsWith(normalized)) ? 1 : Infinity;
-    return { command, order, score, count: usageCount(usage, command.id) };
-  }).filter(result => Number.isFinite(result.score))
+  return source
+    .map((command, order) => {
+      const names = [command.name, ...command.aliases];
+      const score =
+        !normalized || names.includes(normalized)
+          ? 0
+          : names.some((name) => name.startsWith(normalized))
+            ? 1
+            : Infinity;
+      return { command, order, score, count: usageCount(usage, command.id) };
+    })
+    .filter((result) => Number.isFinite(result.score))
     .sort((a, b) => a.score - b.score || b.count - a.count || a.order - b.order)
-    .map(result => result.command);
+    .map((result) => result.command);
 }
 
 function triggerAt(line, column, source = commands) {
@@ -43,7 +68,9 @@ function createSlashSuggest(app, plugin, EditorSuggest) {
       this.executing = false;
     }
 
-    enabled() { return plugin.options?.slash !== false; }
+    enabled() {
+      return plugin.options?.slash !== false;
+    }
 
     onTrigger(cursor, editor) {
       if (!this.enabled()) return null;
@@ -53,7 +80,11 @@ function createSlashSuggest(app, plugin, EditorSuggest) {
       if (plugin.logic.protectedContext(editor.getValue(), position)) return null;
       if (editor.cm && plugin.inCode(editor.cm, position)) return null;
       this.executing = false;
-      return { start: { line: cursor.line, ch: trigger.column }, end: cursor, query: trigger.query };
+      return {
+        start: { line: cursor.line, ch: trigger.column },
+        end: cursor,
+        query: trigger.query,
+      };
     }
 
     getSuggestions(context) {
@@ -82,7 +113,8 @@ function createSlashSuggest(app, plugin, EditorSuggest) {
 
     activeContext(editor) {
       const context = this.context;
-      if (!this.enabled() || !context || this.executing || editor && editor !== context.editor) return null;
+      if (!this.enabled() || !context || this.executing || (editor && editor !== context.editor))
+        return null;
       const { start, end } = context;
       if (!start || !end || start.line !== end.line) return null;
       const trigger = this.onTrigger(end, context.editor);
@@ -94,10 +126,12 @@ function createSlashSuggest(app, plugin, EditorSuggest) {
       // Obsidian's native suggestion list tracks its keyboard selection here.
       // Fall back to the best live match when no native selection is available.
       const list = this.suggestions;
-      const selected = Array.isArray(list?.values) && Number.isInteger(list?.selectedItem)
-        ? list.values[list.selectedItem] : null;
+      const selected =
+        Array.isArray(list?.values) && Number.isInteger(list?.selectedItem)
+          ? list.values[list.selectedItem]
+          : null;
       const matches = this.getSuggestions(context);
-      return matches.find(value => value.id === selected?.id) || matches[0];
+      return matches.find((value) => value.id === selected?.id) || matches[0];
     }
 
     completeSuggestion(editor) {
@@ -114,11 +148,14 @@ function createSlashSuggest(app, plugin, EditorSuggest) {
       return true;
     }
 
-    autocomplete(editor) { return this.completeSuggestion(editor); }
+    autocomplete(editor) {
+      return this.completeSuggestion(editor);
+    }
 
     selectSuggestion(value) {
       const context = this.activeContext();
-      if (!context || !this.getSuggestions(context).some(command => command.id === value?.id)) return;
+      if (!context || !this.getSuggestions(context).some((command) => command.id === value?.id))
+        return;
       if (typeof plugin.runSlashCommand !== "function") return;
       this.executing = true;
       this.close();
@@ -137,17 +174,40 @@ function createRegistry() {
     triggerAt: (line, column) => triggerAt(line, column, local),
     createSlashSuggest,
     register(command) {
-      if (!command || !/^[a-z][a-z-]{0,39}$/.test(command.name || "") || command.id !== command.name ||
-          typeof command.description !== "string" || command.description.length > 200 || typeof command.run !== "function")
-        throw Error("A slash command needs matching lowercase id/name, description and run callback.");
+      if (
+        !command ||
+        !/^[a-z][a-z-]{0,39}$/.test(command.name || "") ||
+        command.id !== command.name ||
+        typeof command.description !== "string" ||
+        command.description.length > 200 ||
+        typeof command.run !== "function"
+      )
+        throw Error(
+          "A slash command needs matching lowercase id/name, description and run callback."
+        );
       const aliases = command.aliases || [];
-      if (!Array.isArray(aliases) || aliases.some(alias => typeof alias !== "string" || !/^[a-z][a-z-]{0,39}$/.test(alias))) throw Error("Invalid command aliases.");
+      if (
+        !Array.isArray(aliases) ||
+        aliases.some((alias) => typeof alias !== "string" || !/^[a-z][a-z-]{0,39}$/.test(alias))
+      )
+        throw Error("Invalid command aliases.");
       const names = [command.name, ...aliases];
-      if (new Set(names).size !== names.length || local.some(c => [c.name,...c.aliases].some(name=>names.includes(name)))) throw Error("Slash command name or alias already registered.");
-      const entry = Object.freeze({ ...command, aliases:[...aliases], icon:typeof command.icon === "string" ? command.icon.slice(0,16) : "🧩" });
+      if (
+        new Set(names).size !== names.length ||
+        local.some((c) => [c.name, ...c.aliases].some((name) => names.includes(name)))
+      )
+        throw Error("Slash command name or alias already registered.");
+      const entry = Object.freeze({
+        ...command,
+        aliases: [...aliases],
+        icon: typeof command.icon === "string" ? command.icon.slice(0, 16) : "🧩",
+      });
       local.push(entry);
-      return () => { const index=local.indexOf(entry);if(index>=0)local.splice(index,1); };
-    }
+      return () => {
+        const index = local.indexOf(entry);
+        if (index >= 0) local.splice(index, 1);
+      };
+    },
   };
 }
 module.exports = { commands, search, triggerAt, createSlashSuggest, createRegistry };

@@ -2,19 +2,31 @@
 const assert = require("node:assert/strict");
 const { leadingSpaceGroups, createLiteralSpaceExtension } = require("../src/features/spaces.js");
 let checks = 0;
-function test(name, fn) { fn(); checks++; console.log("✓ " + name); }
-function groups(text) { return leadingSpaceGroups(text).map(({ from, to }) => [from, to]); }
+function test(name, fn) {
+  fn();
+  checks++;
+  console.log("✓ " + name);
+}
+function groups(text) {
+  return leadingSpaceGroups(text).map(({ from, to }) => [from, to]);
+}
 
 test("one through three leading spaces keep their native glyph widths", () => {
   for (let count = 0; count < 4; count++) assert.deepEqual(groups(" ".repeat(count) + "text"), []);
 });
 test("each completed four-space group gets its own geometry override", () => {
   assert.deepEqual(groups("    text"), [[0, 4]]);
-  assert.deepEqual(groups("         text"), [[0, 4], [4, 8]]);
+  assert.deepEqual(groups("         text"), [
+    [0, 4],
+    [4, 8],
+  ]);
 });
 test("tabs are never marked or flattened", () => {
   assert.deepEqual(groups("\t\ttext"), []);
-  assert.deepEqual(groups("\t    \t    text"), [[1, 5], [6, 10]]);
+  assert.deepEqual(groups("\t    \t    text"), [
+    [1, 5],
+    [6, 10],
+  ]);
   for (const group of leadingSpaceGroups("\t    \t    text"))
     assert.equal("\t    \t    text".slice(group.from, group.to), "    ");
 });
@@ -48,14 +60,14 @@ function document(text) {
     return line;
   });
   return {
-    line: number => entries[number - 1],
-    lineAt: position => entries.find(line => position <= line.to) || entries.at(-1)
+    line: (number) => entries[number - 1],
+    lineAt: (position) => entries.find((line) => position <= line.to) || entries.at(-1),
   };
 }
 const Decoration = {
   none: [],
-  mark: spec => ({ range: (from, to) => ({ from, to, class: spec.class }) }),
-  set: ranges => ranges
+  mark: (spec) => ({ range: (from, to) => ({ from, to, class: spec.class }) }),
+  set: (ranges) => ranges,
 };
 const ViewPlugin = { fromClass: (Type, spec) => ({ Type, spec }) };
 
@@ -66,14 +78,30 @@ test("viewport decoration planning leaves stored text and actual tabs intact", (
   const extension = createLiteralSpaceExtension(plugin, { Decoration, ViewPlugin });
   const view = { state: { doc }, visibleRanges: [{ from: 8, to: text.length }] };
   const value = new extension.Type(view);
-  assert.deepEqual(value.decorations.map(({ from, to }) => [from, to]), [[9, 13], [18, 22], [22, 26]]);
+  assert.deepEqual(
+    value.decorations.map(({ from, to }) => [from, to]),
+    [
+      [9, 13],
+      [18, 22],
+      [22, 26],
+    ]
+  );
   assert.equal(text, "outside\n\t    code\n        next");
   for (const range of value.decorations) assert.equal(text.slice(range.from, range.to), "    ");
 });
 test("overlapping visible ranges do not duplicate line decorations", () => {
   const text = "    first\n    second";
-  const extension = createLiteralSpaceExtension({ options: { literalSpaces: true } }, { Decoration, ViewPlugin });
-  const view = { state: { doc: document(text) }, visibleRanges: [{ from: 0, to: 12 }, { from: 10, to: text.length }] };
+  const extension = createLiteralSpaceExtension(
+    { options: { literalSpaces: true } },
+    { Decoration, ViewPlugin }
+  );
+  const view = {
+    state: { doc: document(text) },
+    visibleRanges: [
+      { from: 0, to: 12 },
+      { from: 10, to: text.length },
+    ],
+  };
   assert.equal(new extension.Type(view).decorations.length, 2);
 });
 test("disabling literal-space mode removes only this extension's overrides", () => {

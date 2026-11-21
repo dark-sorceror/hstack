@@ -1,8 +1,18 @@
 "use strict";
 const assert = require("node:assert/strict");
-const { listPlan, typographyPlan, prefixPlan, revertPlan, protectedContext } = require("../src/features/logic.js");
+const {
+  listPlan,
+  typographyPlan,
+  prefixPlan,
+  revertPlan,
+  protectedContext,
+} = require("../src/features/logic.js");
 let count = 0;
-function test(name, fn) { fn(); count++; console.log("✓ " + name); }
+function test(name, fn) {
+  fn();
+  count++;
+  console.log("✓ " + name);
+}
 function apply(text, changes) {
   for (const change of [...changes].sort((a, b) => b.from - a.from))
     text = text.slice(0, change.from) + change.insert + text.slice(change.to);
@@ -37,15 +47,23 @@ test("a bullet parent remains a bullet when returning from its child", () => {
   assert.equal(move("* Parent\n\t- Details", 1, "outdent").text, "* Parent\n* Details");
 });
 test("an explicitly existing numbered child list stays numbered", () => {
-  assert.equal(move("1. Parent\n\t1. Existing\n2. Next", 2, "indent").text, "1. Parent\n\t1. Existing\n\t2. Next");
+  assert.equal(
+    move("1. Parent\n\t1. Existing\n2. Next", 2, "indent").text,
+    "1. Parent\n\t1. Existing\n\t2. Next"
+  );
 });
 test("moving a parent also moves descendants, but not following siblings", () => {
   const before = "1. Parent\n2. Move me\n\t- Child\n\t\t- Grandchild\n3. Keep me";
-  assert.equal(move(before, 1, "indent").text,
-    "1. Parent\n\t* Move me\n\t\t- Child\n\t\t\t- Grandchild\n3. Keep me");
+  assert.equal(
+    move(before, 1, "indent").text,
+    "1. Parent\n\t* Move me\n\t\t- Child\n\t\t\t- Grandchild\n3. Keep me"
+  );
 });
 test("spaces-only indentation uses the configured width", () => {
-  assert.equal(move("1. Parent\n2. ", 1, "indent", { useTabs: false, tabSize: 2 }).text, "1. Parent\n  * ");
+  assert.equal(
+    move("1. Parent\n2. ", 1, "indent", { useTabs: false, tabSize: 2 }).text,
+    "1. Parent\n  * "
+  );
 });
 test("cursor remains after the changed prefix", () => {
   const result = move("1. Parent\n2. ", 1, "indent");
@@ -63,7 +81,7 @@ test("fenced list-looking text is never reformatted", () => {
   assert.equal(listPlan(text, 2, 3, "indent"), null);
 });
 test("all dash/arrow chains convert immediately", () => {
-  const cases = {"--":"–", "---":"—", "-->":"⟶", "<--":"⟵", "<-->":"⟷"};
+  const cases = { "--": "–", "---": "—", "-->": "⟶", "<--": "⟵", "<-->": "⟷" };
   for (const [raw, expected] of Object.entries(cases)) {
     for (const prefix of ["", "Prose "]) {
       let text = prefix;
@@ -86,18 +104,32 @@ test("Space does not trigger a typography conversion", () => {
 });
 test("immediate Backspace restores the entire raw chain", () => {
   for (const raw of ["--", "---", "-->", "<--", "<-->"]) {
-    let text = "Prose ", plan;
+    let text = "Prose ",
+      plan;
     for (const char of raw) {
       plan = typographyPlan(text, text.length, text.length, char);
       text = plan ? apply(text, [plan]) : text + char;
     }
-    const record = {from:plan.from, to:plan.from+plan.insert.length, text:plan.insert, raw:plan.raw};
+    const record = {
+      from: plan.from,
+      to: plan.from + plan.insert.length,
+      text: plan.insert,
+      raw: plan.raw,
+    };
     assert.equal(apply(text, [revertPlan(text, record.to, record)]), "Prose " + raw);
-    assert.equal(revertPlan(text, record.to-1, record), null);
+    assert.equal(revertPlan(text, record.to - 1, record), null);
   }
 });
 test("code, frontmatter, comments and escaped shortcuts are preserved", () => {
-  for (const text of ["---\ntitle: a -", "Text `a-", "```python\na-", "<!-- comment -", "<!-", "Escaped \\-", "Value $x-"])
+  for (const text of [
+    "---\ntitle: a -",
+    "Text `a-",
+    "```python\na-",
+    "<!-- comment -",
+    "<!-",
+    "Escaped \\-",
+    "Value $x-",
+  ])
     assert.equal(typographyPlan(text, text.length, text.length, "-"), null);
 });
 test("prose after closed code and math blocks is eligible", () => {
@@ -108,8 +140,12 @@ test("prose after closed code and math blocks is eligible", () => {
 });
 test("dot-list and checkbox shortcuts work in empty prefix positions", () => {
   for (const [text, char, expected] of [
-    [".", "-", "* "], ["    .", "-", "    * "], ["2. .", "-", "* "],
-    ["[", "]", "- [ ] "], ["2. [", "]", "- [ ] "], ["* [", "]", "- [ ] "]
+    [".", "-", "* "],
+    ["    .", "-", "    * "],
+    ["2. .", "-", "* "],
+    ["[", "]", "- [ ] "],
+    ["2. [", "]", "- [ ] "],
+    ["* [", "]", "- [ ] "],
   ]) {
     assert.equal(apply(text, [prefixPlan(text, text.length, text.length, char)]), expected);
   }
@@ -118,10 +154,17 @@ test("the checkbox shortcut consumes a native paired closing bracket", () => {
   const plan = prefixPlan("[]", 1, 1, "]");
   assert.equal(apply("[]", [plan]), "- [ ] ");
   const nested = "    - []";
-  assert.equal(apply(nested, [prefixPlan(nested, nested.length-1, nested.length-1, "]")]), "    - [ ] ");
+  assert.equal(
+    apply(nested, [prefixPlan(nested, nested.length - 1, nested.length - 1, "]")]),
+    "    - [ ] "
+  );
 });
 test("prefix shortcuts leave ordinary text and code alone", () => {
-  for (const [text, char] of [["Version 1.", "-"], ["Array [", "]"], ["```python\n[", "]"]])
+  for (const [text, char] of [
+    ["Version 1.", "-"],
+    ["Array [", "]"],
+    ["```python\n[", "]"],
+  ])
     assert.equal(prefixPlan(text, text.length, text.length, char), null);
 });
 test("empty checkbox children return to parent numbering", () => {

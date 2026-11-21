@@ -6,8 +6,12 @@ const START = "<!-- notes-toc:start -->";
 const END = "<!-- notes-toc:end -->";
 
 function managedBlock(text) {
-  const starts = [...text.matchAll(/^<!-- notes-toc:start -->[ \t]*$/gm)].filter(match => !protectedContext(text, match.index));
-  const ends = [...text.matchAll(/^<!-- notes-toc:end -->[ \t]*$/gm)].filter(match => !protectedContext(text, match.index));
+  const starts = [...text.matchAll(/^<!-- notes-toc:start -->[ \t]*$/gm)].filter(
+    (match) => !protectedContext(text, match.index)
+  );
+  const ends = [...text.matchAll(/^<!-- notes-toc:end -->[ \t]*$/gm)].filter(
+    (match) => !protectedContext(text, match.index)
+  );
   if (!starts.length && !ends.length) return undefined;
   // Do not overwrite an ambiguous or incomplete user-edited marker block.
   if (starts.length !== 1 || ends.length !== 1 || ends[0].index < starts[0].index) return null;
@@ -29,23 +33,36 @@ function headingText(source) {
   text = text.replace(/<\/?[A-Za-z][^>]*>/g, "");
   text = text.replace(/&(#(?:x[\da-f]+|\d+)|amp|lt|gt|quot|apos);/gi, (entity, name) => {
     if (name[0] === "#") {
-      const value = name[1].toLowerCase() === "x" ? parseInt(name.slice(2), 16) : Number(name.slice(1));
-      return value > 0 && value <= 0x10FFFF ? String.fromCodePoint(value) : entity;
+      const value =
+        name[1].toLowerCase() === "x" ? parseInt(name.slice(2), 16) : Number(name.slice(1));
+      return value > 0 && value <= 0x10ffff ? String.fromCodePoint(value) : entity;
     }
     return { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'" }[name.toLowerCase()];
   });
-  return text.replace(/\uE000(\d+)\uE001/g, (_, index) => escapes[Number(index)]).replace(/[ \t]+/g, " ").trim();
+  return text
+    .replace(/\uE000(\d+)\uE001/g, (_, index) => escapes[Number(index)])
+    .replace(/[ \t]+/g, " ")
+    .trim();
 }
 
 function scanHeadings(text) {
   const managed = managedBlock(text);
-  const result = [], lines = text.split("\n");
-  let offset = 0, fence = null, comment = false, yaml = /^\uFEFF?---[ \t]*$/.test(lines[0] || "");
-  let previous = null, listParents = [];
+  const result = [],
+    lines = text.split("\n");
+  let offset = 0,
+    fence = null,
+    comment = false,
+    yaml = /^\uFEFF?---[ \t]*$/.test(lines[0] || "");
+  let previous = null,
+    listParents = [];
   for (let index = 0; index < lines.length; index++) {
-    const raw = lines[index], from = offset;
+    const raw = lines[index],
+      from = offset;
     offset += raw.length + 1;
-    if (managed && from >= managed.from && from < managed.to) { previous = null; continue; }
+    if (managed && from >= managed.from && from < managed.to) {
+      previous = null;
+      continue;
+    }
     if (yaml) {
       if (index > 0 && /^(?:---|\.\.\.)[ \t]*$/.test(raw)) yaml = false;
       previous = null;
@@ -57,47 +74,72 @@ function scanHeadings(text) {
       previous = null;
       continue;
     }
-    let line = "", position = 0;
+    let line = "",
+      position = 0;
     while (position < raw.length) {
       if (comment) {
         const close = raw.indexOf("-->", position);
         if (close < 0) break;
-        comment = false; position = close + 3;
+        comment = false;
+        position = close + 3;
       } else {
         const open = raw.indexOf("<!--", position);
-        if (open < 0) { line += raw.slice(position); break; }
-        line += raw.slice(position, open); comment = true; position = open + 4;
+        if (open < 0) {
+          line += raw.slice(position);
+          break;
+        }
+        line += raw.slice(position, open);
+        comment = true;
+        position = open + 4;
       }
     }
-    if (/^ {0,3}>/.test(line)) { previous = null; continue; }
+    if (/^ {0,3}>/.test(line)) {
+      previous = null;
+      continue;
+    }
     const opening = /^[ \t]*(?:(?:[-+*]|\d+[.)])[ \t]+)?(`{3,}|~{3,})(.*)$/.exec(line);
     if (opening) {
       fence = { char: opening[1][0], length: opening[1].length };
-      previous = null; continue;
+      previous = null;
+      continue;
     }
     const item = /^([ \t]*)(?:[-+*]|\d+[.)])([ \t]+)/.exec(line);
-    const indent = (/^[ \t]*/.exec(line)[0]).replace(/\t/g, "    ").length;
+    const indent = /^[ \t]*/.exec(line)[0].replace(/\t/g, "    ").length;
     if (item) {
-      listParents = listParents.filter(parent => parent.indent < indent);
+      listParents = listParents.filter((parent) => parent.indent < indent);
       listParents.push({ indent, content: item[0].replace(/\t/g, "    ").length });
-      previous = null; continue;
+      previous = null;
+      continue;
     }
-    if (indent >= 4 || listParents.some(parent => indent >= parent.content)) { previous = null; continue; }
+    if (indent >= 4 || listParents.some((parent) => indent >= parent.content)) {
+      previous = null;
+      continue;
+    }
     if (line.trim()) listParents = [];
     const atx = /^ {0,3}(#{1,6})(?:[ \t]+(.*?)|[ \t]*)$/.exec(line);
     if (atx) {
       const title = headingText((atx[2] || "").replace(/[ \t]+#+[ \t]*$/, ""));
       if (title) result.push({ level: atx[1].length, text: title, from, line: index });
-      previous = null; continue;
+      previous = null;
+      continue;
     }
     const underline = /^ {0,3}(=+|-+)[ \t]*$/.exec(line);
     if (underline && previous && previous.line === index - 1) {
       const title = headingText(previous.text);
-      if (title) result.push({ level: underline[1][0] === "=" ? 1 : 2, text: title, from: previous.from, line: previous.line });
-      previous = null; continue;
+      if (title)
+        result.push({
+          level: underline[1][0] === "=" ? 1 : 2,
+          text: title,
+          from: previous.from,
+          line: previous.line,
+        });
+      previous = null;
+      continue;
     }
-    previous = line.trim() && !/^\s*(?:<|[-+*][ \t]|\d+[.)][ \t])/.test(line)
-      ? { text: line.trim(), from, line: index } : null;
+    previous =
+      line.trim() && !/^\s*(?:<|[-+*][ \t]|\d+[.)][ \t])/.test(line)
+        ? { text: line.trim(), from, line: index }
+        : null;
   }
   return result;
 }
@@ -107,14 +149,18 @@ function headingLink(title) {
   // same-page Markdown link handles these rare names without broken syntax.
   if (/[|\[\]\\]/.test(title)) {
     const label = title.replace(/[\\[\]*_`|]/g, "\\$&");
-    const fragment = encodeURIComponent(title).replace(/[!'()*]/g, char => "%" + char.charCodeAt(0).toString(16).toUpperCase());
+    const fragment = encodeURIComponent(title).replace(
+      /[!'()*]/g,
+      (char) => "%" + char.charCodeAt(0).toString(16).toUpperCase()
+    );
     return `[${label}](#${fragment})`;
   }
   return `[[#${title}|${title}]]`;
 }
 
 function contentsBlock(headings) {
-  const levels = [], entries = [];
+  const levels = [],
+    entries = [];
   for (const heading of headings) {
     while (levels.length && levels.at(-1) >= heading.level) levels.pop();
     entries.push("  ".repeat(levels.length) + "* " + headingLink(heading.text));
@@ -126,17 +172,27 @@ function contentsBlock(headings) {
 function planTOC(text, from, to) {
   if (from < 0 || to < from || to > text.length) return null;
   const token = text.slice(from, to).trim().toLowerCase();
-  if (!/^\/[a-z]*$/.test(token) || !["toc", "outline"].some(name => name.startsWith(token.slice(1)))) return null;
+  if (
+    !/^\/[a-z]*$/.test(token) ||
+    !["toc", "outline"].some((name) => name.startsWith(token.slice(1)))
+  )
+    return null;
   const lineStart = text.lastIndexOf("\n", from - 1) + 1;
   const nextLine = text.indexOf("\n", to);
   const lineEnd = nextLine < 0 ? text.length : nextLine;
-  if (text.slice(lineStart, from).trim() || text.slice(to, lineEnd).trim() ||
-      /^[ \t]{4}|^\t/.test(text.slice(lineStart, from)) || protectedContext(text, from)) return null;
+  if (
+    text.slice(lineStart, from).trim() ||
+    text.slice(to, lineEnd).trim() ||
+    /^[ \t]{4}|^\t/.test(text.slice(lineStart, from)) ||
+    protectedContext(text, from)
+  )
+    return null;
   const existing = managedBlock(text);
   if (existing === null) return null;
   const headings = scanHeadings(text);
   if (!headings.length) return null;
-  const block = contentsBlock(headings), changes = [];
+  const block = contentsBlock(headings),
+    changes = [];
   let blockFrom;
   if (existing) {
     changes.push({ from: existing.from, to: existing.to, insert: block });
@@ -152,8 +208,15 @@ function planTOC(text, from, to) {
     blockFrom = lineStart;
   }
   changes.sort((a, b) => a.from - b.from);
-  const shift = changes.filter(change => change.from < blockFrom).reduce((total, change) => total + change.insert.length - (change.to - change.from), 0);
-  return { changes, cursor: blockFrom + shift + block.length, headingCount: headings.length, updated: !!existing };
+  const shift = changes
+    .filter((change) => change.from < blockFrom)
+    .reduce((total, change) => total + change.insert.length - (change.to - change.from), 0);
+  return {
+    changes,
+    cursor: blockFrom + shift + block.length,
+    headingCount: headings.length,
+    updated: !!existing,
+  };
 }
 
 module.exports = { START, END, scanHeadings, headingText, headingLink, contentsBlock, planTOC };

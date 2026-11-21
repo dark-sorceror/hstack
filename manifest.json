@@ -1,7 +1,7 @@
 {
   "id": "hstack",
   "name": "hstack",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "minAppVersion": "1.14.4",
   "description": "Write comfortably with typing helpers, local slash commands, and revision-aware note access for agents.",
   "author": "Hao Yan",

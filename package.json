@@ -1,6 +1,6 @@
 {
   "name": "hstack",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "private": true,
   "description": "A writing and agent context stack for Obsidian.",
   "main": "main.js",
@@ -17,22 +17,30 @@
     "build": "npm run typecheck && node esbuild.config.mjs",
     "typecheck": "tsc --noEmit",
     "test": "node scripts/test.mjs",
-    "check": "npm run build && npm test && npm run verify:package",
+    "check": "npm run lint && npm run format:check && npm run verify:wasm-source && npm run build && npm test && npm run verify:package",
     "verify:package": "node scripts/verify-package.mjs",
     "package": "npm run build && node scripts/package.mjs",
     "deploy": "node scripts/deploy.mjs",
     "build:wasm": "sh scripts/build-autocorrect.sh",
     "version": "node scripts/version-bump.mjs && git add manifest.json versions.json",
-    "verify:wasm": "node scripts/wasm-build.mjs --check",
-    "verify:wasm-source": "node scripts/wasm-build.mjs --source-only"
+    "lint": "eslint src bin scripts esbuild.config.mjs eslint.config.mjs",
+    "format": "prettier --write src tests scripts *.mjs *.json .github/workflows/*.yml",
+    "format:check": "prettier --check src tests scripts *.mjs *.json .github/workflows/*.yml",
+    "verify:wasm-source": "node scripts/wasm-build.mjs --source-only",
+    "verify:wasm": "node scripts/wasm-build.mjs --check"
   },
   "devDependencies": {
+    "@codemirror/commands": "^6.11.1",
     "@codemirror/language": "^6.11.0",
     "@codemirror/state": "^6.5.0",
     "@codemirror/view": "^6.38.0",
+    "@eslint/js": "^10.0.1",
     "@types/node": "^22.15.0",
     "esbuild": "^0.25.0",
+    "eslint": "^10.14.0",
+    "globals": "^16.5.0",
     "obsidian": "^1.14.4",
+    "prettier": "^3.9.10",
     "typescript": "^5.9.0"
   }
 }

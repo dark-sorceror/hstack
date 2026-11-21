@@ -27,7 +27,7 @@ try {
       this.manifest = manifest;
     }
     async loadData() {
-      return {};
+      return { templates: [{ name: "study", template: "## Questions\n- [ ] " }] };
     }
     async saveData() {}
     register(fn) {
@@ -88,6 +88,7 @@ try {
   plugin = new bundle.exports.default(app, manifest);
   await plugin.onload();
   assert.equal(plugin.api.version, 1);
+  assert.equal(plugin.slash.search("study")[0].id, "study");
   const corrector = await plugin.autocorrectReady;
   assert.equal(corrector.stats.words, 82769);
   assert.equal(corrector.correctWord("teh"), "the");

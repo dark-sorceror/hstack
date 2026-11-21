@@ -26,7 +26,7 @@ async function acquireLock(key, options = {}) {
       if (error.code !== "EEXIST") throw error;
       try {
         const owner = JSON.parse(fs.readFileSync(ownerPath, "utf8"));
-        if (!Number.isSafeInteger(owner.pid) || owner.pid < 1) throw Error("Invalid lock owner");
+        if (!Number.isSafeInteger(owner.pid) || owner.pid < 1) throw Error("Invalid lock owner", { cause: error });
         try { process.kill(owner.pid, 0); }
         catch (probe) { if (probe.code === "ESRCH") { fs.rmSync(directory, { recursive: true, force: true }); continue; } }
       } catch {
@@ -34,7 +34,7 @@ async function acquireLock(key, options = {}) {
         // if a process was interrupted between them.
         try { if (Date.now() - fs.statSync(directory).mtimeMs > 2000) fs.rmSync(directory, { recursive: true, force: true }); } catch {}
       }
-      if (Date.now() - started > (options.timeout || 10000)) throw Error("Notes bridge is busy; retry the request.");
+      if (Date.now() - started > (options.timeout || 10000)) throw Error("Notes bridge is busy; retry the request.", { cause: error });
       await new Promise(resolve => setTimeout(resolve, 25));
     }
   }

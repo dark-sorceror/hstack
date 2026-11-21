@@ -1,4 +1,4 @@
-import { mkdir, copyFile, readFile, writeFile, rm } from "node:fs/promises";
+import { mkdir, copyFile, readFile, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 const { version } = JSON.parse(await readFile("manifest.json", "utf8"));

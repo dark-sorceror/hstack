@@ -6,7 +6,7 @@ jobs:
   check:
     strategy:
       matrix:
-        node: ["22.16.0", "22"]
+        node: ["22.16.0", "22", "24"]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -29,4 +29,4 @@ jobs:
         run: rustup toolchain install 1.99.1 --profile minimal --target wasm32-unknown-unknown
       - name: Verify the shipped Wasm matches Rust source
         run: RUSTC="$(rustup which --toolchain 1.99.1 rustc)" npm run verify:wasm
-      - run: node --test tests/autocorrect-core.test.cjs tests/autocorrect.test.cjs
+      - run: npm test -- tests/autocorrect-core.test.cjs tests/autocorrect.test.cjs

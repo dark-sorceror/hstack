@@ -11,14 +11,14 @@ access. Markdown remains authoritative; there is no persistent note index.
 | Boundary                              | Responsibility                                            |
 | ------------------------------------- | --------------------------------------------------------- |
 | src/main.ts, src/api.ts               | Typed entry and per-method public contracts               |
-| src/plugin.js                         | Feature lifecycle, hooks and cleanup                      |
+| src/plugin.ts                         | Feature lifecycle, hooks and cleanup                      |
 | src/editor/                           | Keyboard precedence, rendering and host adapters          |
 | src/features/                         | Small writing planners and compatibility facades          |
 | src/markdown/                         | UTF-16 source indices, emphasis and containment queries   |
 | src/commands/, src/ui/                | Command dispatch, settings and help                       |
 | src/agent/                            | Reads, metadata, guarded writes and the SQL child process |
-| src/autocorrect/, native/autocorrect/ | JS integration and Rust/Wasm engine                       |
-| bin/hstack.cjs                        | Standalone official-CLI client                            |
+| src/autocorrect/, native/autocorrect/ | TypeScript integration and Rust/Wasm engine               |
+| bin/hstack.ts                         | Standalone official-CLI client                            |
 
 ## Edit consistency
 

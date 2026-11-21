@@ -57,7 +57,7 @@ function loadCore(saved) {
   };
   vm.runInNewContext(fs.readFileSync(filename, "utf8"), context, { filename });
   return {
-    plugin: new module.exports(),
+    plugin: new module.exports.default(),
     unload: () => hooks.reverse().forEach((callback) => callback()),
     notices,
     extensions,

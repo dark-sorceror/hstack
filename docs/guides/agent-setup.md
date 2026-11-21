@@ -13,6 +13,19 @@ package; it does not install an MCP server or call a model.
 - Enable Obsidian's official CLI and keep the desktop app and target vault open.
 - Make this repository and a supported Node runtime available to your tool.
 
+## Build the client
+
+From the repository root:
+
+```sh
+npm ci --ignore-scripts
+npm run build
+```
+
+This compiles bin/hstack.ts to bin/hstack.cjs alongside the plugin build.
+Rebuild after updating the checkout. The installed plugin does not include
+this standalone client.
+
 ## Check the connection
 
 From the repository root, replace `MyVault` with your vault name:

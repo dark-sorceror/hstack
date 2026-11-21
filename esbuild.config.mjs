@@ -11,7 +11,7 @@ const external = [
   ...builtinModules,
   ...builtinModules.map((module) => "node:" + module),
 ];
-const workerEntry = "src/agent/agent-sql-runner.cjs";
+const workerEntry = "src/agent/agent-sql-runner.ts";
 const workerPlugin = {
   name: "embedded-sql-worker",
   setup(build) {
@@ -55,7 +55,7 @@ const options = {
   format: "cjs",
   target: "es2021",
   external,
-  loader: { ".txt": "text", ".wasm": "base64" },
+  loader: { ".txt": "text", ".wasm": "base64", ".png": "dataurl" },
   plugins: [workerPlugin],
   inject: ["hstack:sql-worker"],
   banner: {

@@ -12,7 +12,10 @@ First public release candidate. No public release or tag has been created yet.
   and disposable commands through public API v1.
 - Live note context, section reads, text/metadata queries, read-only SQLite,
   revision-checked edit previews/writes, and official-CLI JSON transport.
-- Three-file Obsidian packaging, typed method contracts, scoped styles,
+- Strict TypeScript plugin, SQL worker and CLI source with typed method contracts.
+  Build the standalone CLI before use; temporary test output stays outside the checkout.
+- Task-focused user, API and contributor documentation with Mintlify navigation.
+- Three-file Obsidian packaging, scoped styles,
   lint/format checks, keyboard/Undo/lifecycle regressions, minimum-Node tests,
   and pinned Rust/Wasm rebuild verification.
 - Preserve native multiple-cursor input, CRLF contents/section offsets, and

@@ -104,3 +104,26 @@
 }
 
 .hstack-template-validation { color: var(--text-error); white-space: pre-wrap; }
+
+/* Branding is scoped to hstack's own settings and help. */
+.hstack-settings-heading,
+.hstack-help-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.hstack-settings-heading {
+  margin-bottom: 1rem;
+}
+
+.hstack-settings-heading img,
+.hstack-help-heading img {
+  display: block;
+  flex: 0 0 32px;
+  border-radius: 6px;
+}
+
+.hstack-settings-heading h2 {
+  margin: 0;
+}

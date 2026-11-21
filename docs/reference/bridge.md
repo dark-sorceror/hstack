@@ -48,6 +48,8 @@ delete or rename files, and cannot patch AGENTS.md or CLAUDE.md.
 Source pointers carry `path`, SHA-256 `revision`, `source` (`editor` or `vault`),
 `from`, `to`, `lineStart`, `lineEnd` and `headingPath`. Offsets are UTF-16 half-open
 ranges; lines and occurrences start at zero.
+Offsets refer to Obsidian’s decoded text, not file bytes. Use the returned text
+as the offset source; saved-file decoding may omit a leading BOM.
 
 ## Read limits
 

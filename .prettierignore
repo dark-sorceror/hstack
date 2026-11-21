@@ -6,3 +6,4 @@ src/data/
 native/
 licenses/
 package-lock.json
+bin/hstack.cjs

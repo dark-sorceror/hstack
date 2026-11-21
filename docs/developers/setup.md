@@ -37,13 +37,22 @@ enable hstack and its legacy helper simultaneously.
 
 ## Languages and boundaries
 
-The entry and public request/result/settings contracts are TypeScript. Most
-runtime modules are JavaScript; four use `@ts-check`. Global `checkJs` is false.
-This is not full strict TypeScript coverage. Prefer strict types for new public
-interfaces and migrate runtime modules with behavior-parity checks.
+All plugin runtime modules, the SQL worker and CLI source are TypeScript.
+`strict`, `noUncheckedIndexedAccess`, `isolatedModules` and
+`verbatimModuleSyntax` are enabled; JavaScript source is excluded from the
+TypeScript project. Use type-only imports for contracts.
 
-Build scripts may remain .mjs, tests .cjs, and the autocorrect engine Rust.
-Keep Obsidian and CodeMirror as host externals.
+The build emits Obsidian's CommonJS main.js and the standalone bin/hstack.cjs
+client. Edit bin/hstack.ts for CLI changes. Build scripts remain .mjs, existing
+runtime tests .cjs, and the autocorrect engine Rust. Host-specific fields stay
+behind narrow adapter types; Obsidian and CodeMirror remain external.
+
+Tests compile source into a temporary directory, run the existing CommonJS
+regressions there, then remove it. Run a focused suite with:
+
+```sh
+npm test -- tests/autocorrect.test.cjs
+```
 
 ## Rebuild Rust only when needed
 

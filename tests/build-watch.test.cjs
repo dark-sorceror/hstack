@@ -22,7 +22,7 @@ test(
   "watch rebuilds embedded SQL when child entry or its dependencies change",
   { timeout: 20000 },
   async () => {
-    const root = path.resolve(__dirname, "..");
+    const root = process.env.HSTACK_SOURCE_ROOT || path.resolve(__dirname, "..");
     const folder = await fs.mkdtemp(path.join(os.tmpdir(), "hstack-watch-test-"));
     let child;
     try {
@@ -48,13 +48,13 @@ test(
         () => fs.readFile(output, "utf8"),
         (text) => text.includes("DatabaseSync")
       );
-      const runner = path.join(folder, "src/agent/agent-sql-runner.cjs");
+      const runner = path.join(folder, "src/agent/agent-sql-runner.ts");
       await fs.appendFile(runner, '\nconsole.error("WORKER_ENTRY_CHANGED");\n');
       await waitFor(
         () => fs.readFile(output, "utf8"),
         (text) => text.includes("WORKER_ENTRY_CHANGED")
       );
-      const dependency = path.join(folder, "src/agent/sqlite-capabilities.js");
+      const dependency = path.join(folder, "src/agent/sqlite-capabilities.ts");
       await fs.appendFile(dependency, '\nconsole.error("WORKER_DEPENDENCY_CHANGED");\n');
       const rebuilt = await waitFor(
         () => fs.readFile(output, "utf8"),

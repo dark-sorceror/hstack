@@ -10,13 +10,13 @@ npm run check
 
 ## Make a focused change
 
-- Edit src/, not generated main.js or an installed plugin copy.
+- Edit src/ or bin/hstack.ts; rebuild the generated outputs.
 - Preserve Markdown meaning, typing precedence and one-step Undo.
 - Add focused regression checks for behavior changes. Use synthetic notes.
 - Keep Obsidian/CodeMirror external. Avoid new runtime services or dependencies
   unless the feature needs them.
-- Prefer strict TypeScript for new interfaces. Migrate JavaScript separately
-  with parity checks; do not hide gaps behind broad `any` or `ts-nocheck`.
+- Keep runtime TypeScript strict; do not hide gaps behind broad `any` or
+  `ts-nocheck`. Preserve runtime validation at external boundaries.
 
 Build scripts can remain .mjs, tests .cjs, and the autocorrect engine Rust.
 For Rust changes, rebuild with the pinned compiler and verify the shipped Wasm.

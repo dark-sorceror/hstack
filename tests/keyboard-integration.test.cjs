@@ -27,8 +27,10 @@ function fixture(text, cursor = text.length) {
     composing: false,
     state: EditorState.create({
       doc: text,
-      selection: EditorSelection.cursor(cursor),
-      extensions: [history()],
+      selection: Array.isArray(cursor)
+        ? EditorSelection.create(cursor.map((at) => EditorSelection.cursor(at)))
+        : EditorSelection.cursor(cursor),
+      extensions: [history(), EditorState.allowMultipleSelections.of(true)],
     }),
     dispatch(spec) {
       view.state = view.state.update(spec).state;
@@ -103,4 +105,22 @@ test("Space autocorrect and immediate Backspace preserve raw text and rejection 
   assert.equal(f.key("Backspace"), true);
   assert.equal(f.text(), "teh");
   assert.deepEqual(rejected, ["teh"]);
+});
+
+test("emphasis pairing leaves multiple carets and selections to native editing", () => {
+  for (const marker of ["_", "*"]) {
+    const f = fixture(`${marker.repeat(2)}\n${marker.repeat(2)}`, [1, 4]);
+    const original = f.view.state;
+    assert.equal(f.key(marker), false);
+    assert.equal(f.view.state, original);
+    f.view.dispatch(f.view.state.replaceSelection(marker));
+    assert.equal(f.text(), `${marker.repeat(3)}\n${marker.repeat(3)}`);
+    assert.equal(f.view.state.selection.ranges.length, 2);
+    f.view.dispatch({
+      selection: EditorSelection.create([EditorSelection.range(0, 2), EditorSelection.range(4, 6)]),
+    });
+    const selected = f.view.state;
+    assert.equal(f.key(marker), false);
+    assert.equal(f.view.state, selected);
+  }
 });

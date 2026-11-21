@@ -73,7 +73,14 @@ module.exports = class HstackCore extends Plugin {
         EditorState.transactionFilter.of((transaction) => this.onPasteTransaction(transaction)),
         EditorView.domEventHandlers({ keydown: (event, view) => this.onKey(event, view) }),
         EditorView.inputHandler.of((view, from, to, text) => {
-          if (view.state.readOnly || view.composing || this.inCode(view, from)) return false;
+          // These plans replace one range. Native input owns multiple selections.
+          if (
+            view.state.readOnly ||
+            view.composing ||
+            view.state.selection.ranges.length !== 1 ||
+            this.inCode(view, from)
+          )
+            return false;
           const doc = view.state.doc.toString();
           let plan = this.options.listShortcuts ? this.logic.prefixPlan(doc, from, to, text) : null;
           let emoji = false;

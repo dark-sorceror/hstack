@@ -115,6 +115,16 @@ test("disabled toggle applies while opening and while already open", () => {
   s.suggest.selectSuggestion(commands[0]);
   assert.equal(s.calls.length, 0);
 });
+test("multiple selections suppress opening and invalidate an already open slash menu", () => {
+  const s = setup("/toc");
+  s.trigger();
+  s.editor.listSelections = () => [{}, {}];
+  assert.equal(s.trigger(), null);
+  assert.equal(s.suggest.completeSuggestion(s.editor), false);
+  s.suggest.selectSuggestion(commands[0]);
+  assert.equal(s.calls.length, 0);
+  assert.equal(s.text(), "/toc");
+});
 test("Tab completes alias to canonical command without running or recording", () => {
   const s = setup("  /out");
   s.trigger();

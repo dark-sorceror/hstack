@@ -145,7 +145,7 @@ function createEmojiSuggest(app, plugin, EditorSuggest) {
     }
 
     onTrigger(cursor, editor) {
-      if (plugin.options.emoji === false) return null;
+      if (plugin.options.emoji === false || editor.listSelections?.().length > 1) return null;
       const trigger = triggerAt(editor.getLine(cursor.line), cursor.ch);
       if (!trigger) return null;
       const text = editor.getValue();
@@ -186,6 +186,7 @@ function createEmojiSuggest(app, plugin, EditorSuggest) {
       const context = this.context;
       if (!context || plugin.options.emoji === false) return;
       const { editor, start } = context;
+      if (editor.listSelections?.().length > 1) return;
       const end = { ...context.end };
       const line = editor.getLine(start.line);
       const candidate = line.slice(start.ch, end.ch);

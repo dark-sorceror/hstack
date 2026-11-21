@@ -52,7 +52,7 @@ function createSlashSuggest(app, plugin, EditorSuggest) {
     }
 
     onTrigger(cursor, editor) {
-      if (!this.enabled()) return null;
+      if (!this.enabled() || editor.listSelections?.().length > 1) return null;
       const trigger = triggerAt(editor.getLine(cursor.line), cursor.ch);
       if (!trigger) return null;
       const position = editor.posToOffset(cursor);

@@ -103,6 +103,7 @@ function handleKey(plugin, event, view) {
   }
   if (
     plugin.options.formatPairs &&
+    view.state.selection.ranges.length === 1 &&
     ["*", "_"].includes(event.key) &&
     !plugin.inCode(view, selection.from)
   ) {

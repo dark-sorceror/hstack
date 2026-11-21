@@ -102,6 +102,16 @@ class FakeSuggest {
   }
 }
 const plugin = { options: { emoji: true }, logic, inCode: () => false };
+test("multiple selections suppress emoji menus and invalidate an already open picker", () => {
+  const suggest = createEmojiSuggest({}, plugin, FakeSuggest);
+  const editor = {
+    listSelections: () => [{}, {}],
+    replaceRange: () => assert.fail("must not replace one of several selections"),
+  };
+  assert.equal(suggest.onTrigger({ line: 0, ch: 1 }, editor), null);
+  suggest.context = { editor, start: { line: 0, ch: 0 }, end: { line: 0, ch: 1 } };
+  suggest.selectSuggestion(search("thumbs-up")[0]);
+});
 test("native suggest exposes progressively filtered contexts", () => {
   const suggest = createEmojiSuggest({}, plugin, FakeSuggest);
   const text = "Hello :thumbs-up";

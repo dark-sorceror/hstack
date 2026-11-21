@@ -5,12 +5,15 @@ const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
 const { createRequire } = require("node:module");
+const { EditorState, EditorSelection } = require("@codemirror/state");
+const { EditorView } = require("@codemirror/view");
 
 function loadCore(saved) {
   const filename = path.resolve(__dirname, "../src/plugin.js");
   const localRequire = createRequire(filename);
   const hooks = [],
-    notices = [];
+    notices = [],
+    extensions = [];
   class Plugin {
     constructor() {
       this.app = { workspace: { editorSuggest: { suggests: [] } }, vault: { adapter: {} } };
@@ -22,7 +25,9 @@ function loadCore(saved) {
       hooks.push(callback);
     }
     registerEditorSuggest() {}
-    registerEditorExtension() {}
+    registerEditorExtension(extension) {
+      extensions.push(extension);
+    }
     registerMarkdownPostProcessor() {}
     addSettingTab() {}
     addCommand() {}
@@ -55,6 +60,7 @@ function loadCore(saved) {
     plugin: new module.exports(),
     unload: () => hooks.reverse().forEach((callback) => callback()),
     notices,
+    extensions,
   };
 }
 
@@ -79,4 +85,40 @@ test("invalid saved templates do not prevent loading typing helpers or overwrite
   assert.equal(notices.length, 1);
   assert.equal(saved.templates[0].name, "toc");
   unload();
+});
+
+test("input shortcuts defer to native editing with multiple cursors", async () => {
+  const { plugin, extensions, unload } = loadCore({});
+  await plugin.onload();
+  try {
+    plugin.inCode = () => false;
+    for (const [token, typed] of [
+      ["-", "-"],
+      [".", "-"],
+      [":smile", ":"],
+    ]) {
+      const text = token + "\n" + token;
+      const view = {
+        state: EditorState.create({
+          doc: text,
+          selection: EditorSelection.create([
+            EditorSelection.cursor(token.length),
+            EditorSelection.cursor(text.length),
+          ]),
+          extensions: [extensions, EditorState.allowMultipleSelections.of(true)],
+        }),
+        dispatch(spec) {
+          this.state = this.state.update(spec).state;
+        },
+      };
+      for (const handler of view.state.facet(EditorView.inputHandler))
+        assert.equal(handler(view, token.length, token.length, typed), false, token);
+      assert.equal(view.state.doc.toString(), text);
+      view.dispatch(view.state.replaceSelection(typed));
+      assert.equal(view.state.doc.toString(), token + typed + "\n" + token + typed);
+      assert.equal(view.state.selection.ranges.length, 2);
+    }
+  } finally {
+    unload();
+  }
 });
